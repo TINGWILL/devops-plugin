@@ -807,11 +807,7 @@ function App() {
         [selectedRowKeys]
     );
 
-    const pagination = useMemo(() => ({
-        pageSize: 10,
-        showSizeChanger: false,
-        showQuickJumper: false,
-    }), []);
+    const pagination = false;
 
     // 公共样式
     const inputStyles = {
@@ -903,7 +899,9 @@ function App() {
                 backgroundColor: isDarkMode ? 'var(--semi-color-bg-0)' : '#ffffff',
                 color: isDarkMode ? 'var(--semi-color-text-0)' : '#262626',
                 height: '100vh',
-                overflow: 'auto'
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
             }}
         >
             {/* 字体样式覆盖 */}
@@ -987,7 +985,7 @@ function App() {
                 `
             }} />
             {/* 标题和操作按钮 */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', marginBottom: '16px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <div style={{
                         width: '4px',
@@ -1060,18 +1058,19 @@ function App() {
             </div>
 
             {/* 表格 */}
-            <div className="semi-table-container">
+            <div className="semi-table-container" style={{ flex: 1, overflow: 'hidden', marginBottom: '12px' }}>
                 <Table 
                     columns={columns} 
                     dataSource={dataSource} 
                     rowSelection={rowSelection} 
                     pagination={pagination}
-                    scroll={{ x: 1500, y: 'calc(100vh - 300px)' }}
+                    scroll={{ x: 1500, y: 'calc(100vh - 188px)' }}
                     bordered={true}
                     size="small"
                     style={{ 
                         border: '1px solid #e8e8e8', 
-                        borderRadius: '6px'
+                        borderRadius: '6px',
+                        height: '100%'
                     }}
         />
       </div>
