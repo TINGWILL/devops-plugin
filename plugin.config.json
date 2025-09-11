@@ -1,0 +1,16 @@
+
+{
+    "siteDomain": "https://project.xfchat.iflytek.com",
+    "pluginId": "MII_68B2D0E180400375",
+    "pluginSecret": "825d8ff991678bcd89c84f4ca907f3c8cb67cb585638347053a8ee5d9b8bd803c3e87885b84a69a6b23998726eacd951",
+    "resources": [
+        {
+            "id": "web",
+            "entry": "./src/features/web/index.tsx"
+        },
+        {
+            "id": "mobile",
+            "entry": "./src/features/mobile/index.tsx"
+        }
+    ]
+}

@@ -1,0 +1,16 @@
+# build files
+build
+
+# package manager files
+node_modules
+yarn-debug.log*
+yarn-error.log*
+
+# lpm log
+.log
+lpm.**.log
+
+.DS_Store
+
+.vscode
+/.idea/
