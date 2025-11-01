@@ -1,0 +1,372 @@
+# 飞书项目插件开发规范
+
+## 项目概述
+这是一个基于 React + TypeScript 的飞书项目插件，使用 Semi Design 作为 UI 组件库，Vite 作为构建工具。
+
+## 技术栈
+- **React**: 18.2.0+ (函数式组件 + Hooks)
+- **TypeScript**: 严格类型检查
+- **Semi Design**: @douyinfe/semi-ui 2.57.0+
+- **飞书 SDK**: @lark-project/js-sdk 2.0.5+
+- **构建工具**: Vite 5.4.8+
+
+## 代码规范
+
+### React 组件开发
+1. **组件定义**
+   - 优先使用函数式组件，使用 React.FC 或直接函数声明
+   - 组件文件命名使用 PascalCase (如 `BatchHeader.tsx`)
+   - 组件内部逻辑拆分为自定义 Hooks，保持组件简洁
+
+2. **Hooks 使用**
+   - 自定义 Hook 以 `use` 开头，文件放在 `src/hooks/` 目录
+   - 使用 `useCallback` 和 `useMemo` 优化性能
+   - 避免在循环、条件语句中调用 Hooks
+
+3. **状态管理**
+   - 简单状态使用 `useState`
+   - 复杂状态逻辑抽取到自定义 Hooks
+   - 避免过度使用状态提升
+
+### TypeScript 规范
+1. **类型定义**
+   - 接口命名使用 PascalCase (如 `BatchInfo`, `DeploymentTask`)
+   - 导出类型/接口使用 `export interface` 或 `export type`
+   - 避免使用 `any`，使用 `unknown` 或具体类型
+   - 为函数参数和返回值添加类型注解
+
+2. **类型导入**
+   - 使用 `import type` 导入纯类型
+   - 从常量文件导入枚举和类型定义
+
+### Semi Design 使用规范
+1. **组件导入**
+   - 按需导入组件和图标：`import { Table, Button, Modal } from '@douyinfe/semi-ui'`
+   - 图标从 `@douyinfe/semi-icons` 导入：`import { IconPlus, IconDelete } from '@douyinfe/semi-icons'`
+
+2. **样式处理**
+   - 优先使用 Semi Design 的内置样式系统（size、theme、style 等 props）
+   - 暗色模式支持：使用 Semi 的 CSS 变量 `var(--semi-color-bg-0)`、`var(--semi-color-text-0)` 等
+   - 自定义样式使用内联 style 或 CSS 类（放在对应的 index.css 中）
+   - 响应式设计考虑移动端适配
+
+3. **表格组件（Table）** - 参考 [Semi Design Table 官方文档](https://semi.design/zh-CN/show/table)
+   
+   **基本要求：**
+   - 必须为 `dataSource` 中的每个数据项提供唯一的 `key` 属性，或使用 `rowKey` 参数指定主键
+   - 所有行相关操作（选择、展开、分组等）都依赖 `key`，缺少会导致功能异常
+   - 表格列配置使用 `columns` 数组，每个列对象包含 `title`、`dataIndex`、`render` 等属性
+   
+   **性能注意事项：**
+   - Table 的所有参数使用浅层对比，引用型参数（Array/Object）需要手动改变引用才能触发更新
+   - 避免在 render 中直接创建字面量：`<Table dataSource={[...]} columns={[...]} />` ❌
+   - 使用 `useMemo` 或 `useState` 存储 `columns` 和 `dataSource`，避免每次 render 重新创建
+   - 如果参数值在 render 中为字面量，会触发不必要的更新（清空选中行、展开行等）
+   
+   **代码示例：**
+   ```typescript
+   // ✅ 正确：使用 useMemo 缓存引用型参数
+   const columns = useMemo(() => [
+     { title: '名称', dataIndex: 'name' },
+     { title: '状态', dataIndex: 'status' }
+   ], []);
+   
+   const dataSource = useMemo(() => data, [data]);
+   
+   // ❌ 错误：直接在 render 中创建字面量
+   <Table 
+     dataSource={[{ key: '1', name: 'test' }]} 
+     columns={[{ title: '名称', dataIndex: 'name' }]} 
+   />
+   ```
+   
+   **行选择（rowSelection）：**
+   - 配置 `rowSelection` 对象启用行选择功能
+   - `selectedRowKeys` 控制选中的行 key 数组
+   - `onChange` 回调接收 `selectedRowKeys` 和 `selectedRows` 参数
+   - 注意：rowSelection onChange 的第一个参数会缓存之前选中的 keys（用于分页场景）
+   - 如需单选，需要自定义实现（Table 暂不直接支持单选）
+   
+   **表格分组：**
+   - 使用 `groupBy` 属性指定分组字段
+   - 使用 `renderGroupSection` 自定义分组头部渲染
+   - 使用 `onGroupedRow` 配置分组行的样式和事件
+   - 使用 `expandedRowKeys` 和 `onExpandedRowsChange` 控制展开状态
+   - 使用 `clickGroupedRowToExpand` 启用点击分组行展开/收起
+   
+   **固定列：**
+   - 列配置中使用 `fixed: 'left'` 或 `fixed: 'right'` 固定列
+   - 配合 `scroll={{ x: number, y: number }}` 启用横向和纵向滚动
+   - 注意：固定列需要考虑滚动条宽度，确保表头和表体对齐
+   - 固定列会自动处理 RTL/LTR 切换（left <-> right）
+   
+   **排序和过滤：**
+   - 列配置中使用 `sorter: true` 启用排序，或使用函数自定义排序逻辑
+   - 使用 `filters` 数组配置筛选选项
+   - 使用 `onFilter` 函数自定义筛选逻辑
+   - 使用 `onChange` 回调处理排序和筛选变化（接收 pagination、filters、sorter 参数）
+   - 如需服务端排序，通过 onChange 的 sorter 参数发送请求
+   
+   **分页（pagination）：**
+   - 设置 `pagination={false}` 禁用分页
+   - 配置 `pagination` 对象自定义分页：`{ pageSize: 10, currentPage: 1 }`
+   - 使用 `onChange` 处理分页变化
+   - 受控分页：通过 `currentPage` 和 `onChange` 控制分页状态
+   
+   **样式定制：**
+   - 使用 `onRow` 配置行的 className、style、事件处理
+   - 使用 `onHeaderRow` 配置表头行的样式和事件
+   - 使用 `column.onCell` 配置单元格的样式和事件
+   - 使用 `column.onHeaderCell` 配置表头单元格的样式
+   - 示例：斑马纹样式可通过 onRow 设置 className，配合 CSS 实现
+   
+   **高级功能：**
+   - 可展开行：使用 `expandedRowRender` 自定义展开内容
+   - 树形数据：通过 `children` 字段展示树形结构
+   - 虚拟化：大数据量场景使用虚拟滚动提升性能
+   - 无限滚动：结合虚拟化和滚动事件实现
+   - 可伸缩列：配置 `resizable` 对象实现列宽调整
+   - 拖拽排序：配合拖拽库实现行排序
+   
+   **行列合并：**
+   - 使用 `colSpan` 和 `rowSpan` 实现单元格合并
+   - 表头合并：在 columns 配置中使用 `colSpan`
+   - 单元格合并：在 `render` 函数中返回包含 `colSpan`/`rowSpan` 的对象
+   
+   **表格方法：**
+   - 通过 ref 访问 Table 实例方法
+   - `getCurrentPageData()` 获取当前页数据（包含 dataSource 和 groups）
+   
+   **常见问题处理：**
+   - 筛选后数据条数不对：检查筛选列的 `dataIndex` 是否独立，dataSource 是否有独立的 `key`
+   - 点击第二页行选择跳转第一页：检查 dataSource 是否在渲染时发生变化
+   - 表格数据未更新：检查引用型参数是否改变引用
+   - 行不能选中/展开：检查是否设置了 `rowKey` 或 dataSource 每项是否有 `key`
+   - 如何给行添加 className：使用 `onRow` 返回 `{ className: 'xxx' }`
+   - 如何给单元格设置样式：使用 `column.onCell` 返回样式对象
+   
+   **无障碍性和国际化：**
+   - Table 已内置 ARIA 属性支持（role、aria-label 等）
+   - 支持 RTL/LTR，列的 align 和 fixed 会自动切换
+   - 树形表格的 RTL 在部分浏览器有差异，注意测试
+
+### 飞书 SDK 集成
+1. **SDK 使用**
+   - 导入：`import * as LarkProject from '@lark-project/js-sdk'`
+   - 初始化 SDK 实例：根据插件类型使用对应的初始化方法
+   - API 调用使用 async/await，添加错误处理
+
+2. **主题跟随**
+   - 检测飞书项目系统主题变化
+   - 同步插件主题到 Semi Design（通过 `theme-mode` 属性）
+   - 使用 `MutationObserver` 或定时检测主题变化
+
+### 项目结构规范
+```
+src/
+├── components/        # 可复用组件
+├── features/          # 功能模块（web/mobile）
+├── hooks/             # 自定义 Hooks
+├── services/          # API 服务层
+├── utils/             # 工具函数
+└── constants/         # 常量定义
+```
+
+### 代码质量
+1. **性能优化**
+   - 使用 `React.memo` 包装纯组件
+   - 合理使用 `useMemo` 和 `useCallback`
+   - 避免在 render 中创建对象和函数
+
+2. **错误处理**
+   - API 调用使用 try-catch
+   - 使用 Semi Design 的 `Toast` 显示错误提示
+   - 关键操作提供用户反馈
+
+3. **代码注释**
+   - 复杂逻辑添加注释说明
+   - 组件和 Hook 添加 JSDoc 注释
+   - 关键业务逻辑添加中文注释
+
+### 命名规范
+- **文件命名**: 
+  - 组件文件：PascalCase (`BatchHeader.tsx`)
+  - Hook 文件：camelCase (`useBatchOperations.ts`)
+  - 工具文件：camelCase (`batchUtils.ts`)
+  - 常量文件：camelCase (`deploymentStatus.ts`)
+
+- **变量命名**: camelCase (`selectedRowKeys`, `batchGroupData`)
+- **常量命名**: UPPER_SNAKE_CASE (`DEPLOYMENT_STATUS`, `BATCH_COLORS`)
+- **组件命名**: PascalCase (`BatchHeader`, `OperationButtons`)
+- **Hook 命名**: camelCase with `use` prefix (`useDeploymentStatus`, `useBatchOperations`)
+
+### 其他规范
+1. **日期处理**: 使用 `date-fns` 处理日期格式化
+2. **本地存储**: 使用 `localStorage` 持久化数据，添加错误处理
+3. **响应式**: 考虑不同屏幕尺寸，使用 Semi Design 的响应式工具
+4. **无障碍性**: 合理使用语义化 HTML 和 ARIA 属性
+
+## 飞书项目插件兼容性处理
+
+### 主题兼容性（Theme Mode）
+
+1. **主题检测与同步**
+   - 检测飞书原生页面的主题变化，支持明暗两种模式
+   - 多重检测方式：检查 `body`/`html` 的 `class`、`data-theme`、`theme-mode` 属性
+   - 检测背景色：通过 `window.getComputedStyle` 检测背景色是否为暗色（如 `rgb(31, 31, 31)` 或 `#1f1f1f`）
+   - 检查 `localStorage`：检查 `theme`、`theme-mode`、`feishu-theme` 等键值
+   - 使用定时轮询（建议 2 秒间隔）或 `MutationObserver` 监听主题变化
+
+2. **主题应用**
+   - 同步插件容器主题：在 `body` 和插件根容器（如 `#app`）设置 `theme-mode="dark"` 属性
+   - Semi Design 主题跟随：Semi Design 会自动根据 `theme-mode` 属性切换主题
+   - CSS 变量使用：优先使用 Semi Design 的 CSS 变量（如 `var(--semi-color-bg-0)`、`var(--semi-color-text-0)`）
+   - 强制样式：必要时使用 `body[theme-mode="dark"]` 选择器确保样式生效
+
+### CSS 样式隔离与冲突处理
+
+1. **样式作用域**
+   - 使用 CSS Modules 或命名空间隔离样式，避免污染飞书原生页面
+   - 插件容器使用唯一 ID（如 `#app`）或类名，所有样式限制在该容器内
+   - 避免全局样式：不使用 `* { }` 全局选择器，除非确有必要
+
+2. **样式优先级**
+   - 合理使用 `!important`：仅在必要时（如覆盖第三方库样式）使用
+   - 提高选择器特异性：使用更具体的选择器而不是 `!important`
+   - 样式覆盖顺序：插件样式应在 Semi Design 样式之后加载
+
+3. **Semi Design 样式覆盖**
+   - 使用 `dangerouslySetInnerHTML` 动态注入样式时，确保选择器足够具体
+   - 针对表格等复杂组件，使用多层级选择器确保样式生效
+   - 示例：`.semi-table-container .semi-table .semi-table-thead tr th`
+
+### DOM 操作与事件处理
+
+1. **DOM 查询与操作**
+   - 使用多种选择器确保找到元素：提供多个备选选择器，增加兼容性
+   - 延迟执行：使用 `setTimeout` 多次延迟执行（50ms、100ms、300ms、500ms、1000ms），确保 DOM 完全渲染
+   - 使用 `MutationObserver` 监听 DOM 变化，实时处理动态内容
+
+2. **事件处理**
+   - 避免事件冒泡影响原生页面：使用 `e.stopPropagation()` 阻止事件冒泡
+   - 事件清理：在组件卸载时移除事件监听器，防止内存泄漏
+   - 防抖处理：对频繁触发的 DOM 操作使用防抖（debounce），避免性能问题
+
+3. **Semi Design 组件 DOM 操作**
+   - 表格固定列处理：处理表头和表体滚动条宽度不一致的问题
+   - 选择列自定义：自定义表格选择列的显示，如隐藏下拉菜单，保留复选框
+   - 分组行样式：使用 CSS 和 DOM 操作结合处理分组行的背景色和样式
+
+### iframe 通信与上下文
+
+1. **iframe 环境检测**
+   - 检测是否在 iframe 中运行：`window.self !== window.top`
+   - 处理跨域限制：了解同源策略限制，合理使用 `postMessage` 通信
+   - 父页面交互：如需与父页面交互，使用 `window.parent.postMessage`
+
+2. **全局对象访问**
+   - 谨慎访问 `window.top`、`window.parent`，可能受同源策略限制
+   - 使用 try-catch 包裹可能失败的操作
+   - 提供降级方案：当无法访问父页面时，使用独立模式运行
+
+### z-index 层级管理
+
+1. **层级规划**
+   - 插件内容：z-index 通常设置为 1-100
+   - 悬浮组件（Modal、Dropdown、Tooltip）：z-index 设置为 1000-2000
+   - 固定列（表格固定列）：z-index 设置为 10-11
+   - 避免使用过高的 z-index（如 9999），防止遮挡飞书原生 UI
+
+2. **层级冲突处理**
+   - 检查飞书原生 UI 的 z-index，确保插件不会遮挡重要元素
+   - 使用 `position: sticky` 配合合适的 z-index 处理固定列
+   - Modal 和 Dropdown 使用 Semi Design 默认的 z-index，通常已处理层级问题
+
+### 性能优化与加载策略
+
+1. **页面体积控制**
+   - 使用「内联页」组件：对于包含多个导航或复杂详情页的页面，使用内联页减少首页加载体积
+   - 代码分割：使用动态 import 按需加载模块
+   - 避免重复组件：避免重复搭建「可显隐区块」，防止页面卡顿
+
+2. **首屏加载优化**
+   - 延迟加载非关键内容：使用 `React.lazy` 和 `Suspense` 延迟加载组件
+   - 减少初始渲染数据量：表格等大数据组件使用虚拟滚动或分页
+   - 图片懒加载：使用 `loading="lazy"` 属性
+
+3. **运行时性能**
+   - 避免频繁 DOM 查询：缓存 DOM 元素引用
+   - 使用 `useMemo` 和 `useCallback` 缓存计算结果和函数
+   - 合理使用 `React.memo` 避免不必要的组件重渲染
+
+### 响应式与布局适配
+
+1. **容器适配**
+   - 插件容器使用 `100vh` 高度时，注意父容器的限制
+   - 使用 `overflow: auto` 或 `overflow: hidden` 控制滚动行为
+   - 考虑滚动条宽度：固定列布局时，需要处理滚动条宽度（通常 15-17px）
+
+2. **表格布局**
+   - 固定表格布局：使用 `table-layout: fixed` 确保列宽一致
+   - 表头和表体对齐：确保表头和表体列宽完全一致，使用 `box-sizing: border-box`
+   - 固定列定位：使用 `position: sticky` 配合正确的 `left`/`right` 值
+
+3. **媒体查询**
+   - 响应式断点：适配不同屏幕尺寸（移动端、平板、桌面）
+   - 使用 Semi Design 的响应式工具类或 CSS 变量
+
+### 数据持久化与状态管理
+
+1. **本地存储使用**
+   - 使用 try-catch 包裹 `localStorage` 操作，防止隐私模式下的错误
+   - 存储键名使用项目前缀，避免与其他插件冲突
+   - 数据序列化：复杂对象使用 `JSON.stringify/parse`，注意处理循环引用
+
+2. **状态恢复**
+   - 组件挂载时从 localStorage 恢复状态
+   - 状态变化时自动保存到 localStorage
+   - 处理数据格式变化：版本升级时处理旧数据格式兼容
+
+### 错误处理与容错
+
+1. **API 调用容错**
+   - 所有飞书 SDK API 调用使用 try-catch 包裹
+   - 网络错误处理：提供重试机制和友好的错误提示
+   - 权限错误处理：检测并提示用户检查权限设置
+
+2. **DOM 操作容错**
+   - DOM 查询失败时返回 null，使用可选链操作符 `?.`
+   - 检查元素是否存在再操作：`if (element) { ... }`
+   - 提供降级方案：关键功能失败时显示友好提示，不影响整体使用
+
+3. **浏览器兼容性**
+   - 检测浏览器特性支持：使用特性检测而非浏览器检测
+   - Polyfill：对于不支持的 API（如 `MutationObserver`），提供 polyfill 或降级方案
+
+### 最佳实践总结
+
+1. **开发阶段**
+   - 在飞书项目环境中测试，而非仅在独立页面测试
+   - 测试明暗两种主题模式
+   - 测试不同屏幕尺寸和分辨率
+   - 测试表格滚动、固定列等交互
+
+2. **调试技巧**
+   - 使用浏览器开发者工具检查样式冲突
+   - 使用 `console.log` 调试主题检测逻辑
+   - 使用 `MutationObserver` 调试 DOM 变化
+
+3. **常见问题排查**
+   - 样式不生效：检查选择器特异性、CSS 加载顺序、是否有 `!important` 冲突
+   - 主题不同步：检查主题检测逻辑、`theme-mode` 属性设置、Semi Design 版本
+   - 固定列不对齐：检查滚动条宽度、`table-layout`、列宽计算
+   - 事件不响应：检查事件冒泡、z-index 层级、元素是否被遮挡
+
+## 开发建议
+- 保持组件职责单一，复杂逻辑抽取到 Hooks 或 utils
+- 优先使用 Semi Design 组件，减少自定义 UI 组件
+- 遵循飞书项目插件的设计规范和交互模式
+- 确保代码在明暗两种主题下都正常显示
+- 注意性能优化，避免不必要的重渲染
+- **兼容性优先**：始终考虑与飞书原生页面的兼容性，避免冲突
+- **渐进增强**：核心功能优先，增强功能提供降级方案
