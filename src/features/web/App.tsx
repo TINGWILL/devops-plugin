@@ -6,12 +6,13 @@ import { useDeploymentStatus, DeploymentTask } from '../../hooks/useDeploymentSt
 import { useBatchOperations } from '../../hooks/useBatchOperations';
 import { OperationButtons } from '../../components/OperationButtons';
 import { StatusTag } from '../../components/StatusTag';
-import { DeploymentStatus, OperationType } from '../../constants/deploymentStatus';
-import { 
-    generateGroupKey
-} from '../../utils/batchUtils';
-
-const DAY = 24 * 60 * 60 * 1000;
+import { DeploymentStatus, OperationType, STATUS_CONFIG } from '../../constants/deploymentStatus';
+import { generateGroupKey } from '../../utils/batchUtils';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
+import { loadArrayFromStorage, saveArrayToStorage, loadFromStorage, saveToStorage } from '../../utils/storageUtils';
+import { extractGroupKeys } from '../../utils/groupKeyUtils';
+import { useFeishuTheme } from '../../hooks/useFeishuTheme';
+import { generateMockTasks } from '../../utils/mockData';
 
 // 使用 DeploymentTask 作为数据项类型
 type DataItem = DeploymentTask;
@@ -82,9 +83,6 @@ const MOCK_APPS: AppInfo[] = [
     }
 ];
 
-// 使用新的状态配置
-import { STATUS_CONFIG } from '../../constants/deploymentStatus';
-
 const POD_STATUS_CONFIG = {
     'running': { text: '运行中', order: 1 },
     'pending': { text: '等待中', order: 2 },
@@ -96,7 +94,7 @@ function App() {
     const {
         tasks: dataSource,
         setTasks: setData,
-        handleOperation,
+        handleOperation: originalHandleOperation,
         getButtonConfig
     } = useDeploymentStatus([]);
     
@@ -118,48 +116,41 @@ function App() {
     const [batchDropdownVisible, setBatchDropdownVisible] = useState(false);
     const [batchConfirmVisible, setBatchConfirmVisible] = useState(false);
     const [batchConfirmOperation, setBatchConfirmOperation] = useState<OperationType | null>(null);
+    // 删除确认弹窗
+    const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+    const [deleteConfirmTask, setDeleteConfirmTask] = useState<DeploymentTask | null>(null);
+    
+    // 包装 handleOperation，删除操作时先显示确认弹窗
+    // silent: 是否静默执行（不显示 Toast 提示），用于批量操作
+    const handleOperation = useCallback(async (operation: OperationType, task: DeploymentTask, silent?: boolean) => {
+        if (operation === OperationType.DELETE) {
+            // 删除操作：显示确认弹窗（批量操作时 silent 参数不影响删除确认）
+            setDeleteConfirmTask(task);
+            setDeleteConfirmVisible(true);
+        } else {
+            // 其他操作：直接执行，传递 silent 参数
+            await originalHandleOperation(operation, task, silent);
+        }
+    }, [originalHandleOperation]);
+    
+    // 确认删除操作
+    const confirmDelete = useCallback(async () => {
+        if (deleteConfirmTask) {
+            const taskToDelete = deleteConfirmTask;
+            setDeleteConfirmVisible(false);
+            setDeleteConfirmTask(null);
+            await originalHandleOperation(OperationType.DELETE, taskToDelete);
+        }
+    }, [deleteConfirmTask, originalHandleOperation]);
     
     // 飞书项目系统主题跟随
-    const [isDarkMode, setIsDarkMode] = useState(false);
-    
-    // ========== 数据存储策略 ==========
-    // 1. 分组 key 和部署任务数据：从 API 获取
-    //    - 初始数据：使用 mock 数据（固定的，用于开发测试）
-    //    - 操作后的数据：保存到浏览器缓存，刷新后优先使用（模拟从 API 获取的真实数据）
-    // 2. 分组展开/收起状态：存储在浏览器缓存中（通过 EXPANDED_GROUP_KEYS_STORAGE_KEY），服务端不做多余存储
-    const EXPANDED_GROUP_KEYS_STORAGE_KEY = 'devops_expanded_group_keys';
-    const TASKS_DATA_STORAGE_KEY = 'devops_tasks_data'; // 存储操作后的任务数据（用于仿真）
-    
-    // 从本地存储加载分组展开状态（这是唯一存储在浏览器缓存的状态）
-    const loadExpandedGroupKeys = (): string[] => {
-        try {
-            const stored = localStorage.getItem(EXPANDED_GROUP_KEYS_STORAGE_KEY);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.every(key => typeof key === 'string')) {
-                    return parsed;
-                }
-            }
-        } catch (error) {
-            // 读取本地存储失败，返回空数组
-        }
-        return [];
-    };
-
-    // 保存分组展开状态到本地存储（这是唯一存储在浏览器缓存的状态）
-    const saveExpandedGroupKeys = (keys: string[]): void => {
-        try {
-            localStorage.setItem(EXPANDED_GROUP_KEYS_STORAGE_KEY, JSON.stringify(keys));
-            console.log('[保存分组状态] 已保存到 localStorage:', keys);
-        } catch (error) {
-            console.error('[保存分组状态] 保存失败:', error);
-            // 保存到本地存储失败，忽略错误
-        }
-    };
+    const isDarkMode = useFeishuTheme();
 
     // 分组展开状态（存储所有展开的分组 groupKey）
     // 优先从本地存储恢复，如果没有则使用空数组
-    const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>(() => loadExpandedGroupKeys());
+    const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>(() => 
+        loadArrayFromStorage(STORAGE_KEYS.EXPANDED_GROUP_KEYS)
+    );
     // 标记是否已初始化展开状态（刷新页面时初始化一次）
     const isInitializedRef = useRef(false);
     // 记录上一次的所有分组 key，用于检测新增分组
@@ -167,70 +158,6 @@ function App() {
     // 记录初始化时的分组 key 集合（从 localStorage 恢复时的分组状态）
     const initialGroupKeysRef = useRef<Set<string>>(new Set());
     
-    useEffect(() => {
-        // 检测飞书项目系统主题
-        const detectFeishuTheme = () => {
-            const body = document.body;
-            const html = document.documentElement;
-            
-            // 检查页面元素主题标识
-            const hasDarkClass = body.classList.contains('dark') || html.classList.contains('dark');
-            const hasDarkAttr = body.getAttribute('data-theme') === 'dark' || 
-                               html.getAttribute('data-theme') === 'dark' ||
-                               body.getAttribute('theme-mode') === 'dark' ||
-                               html.getAttribute('theme-mode') === 'dark';
-            
-            if (hasDarkClass || hasDarkAttr) return true;
-            
-            // 检查背景色
-            const bgColor = window.getComputedStyle(body).backgroundColor;
-            if (bgColor && (bgColor.includes('rgb(31, 31, 31)') || bgColor.includes('#1f1f1f'))) {
-                return true;
-            }
-            
-            // 检查localStorage
-            try {
-                const storedTheme = localStorage.getItem('theme') || 
-                                  localStorage.getItem('theme-mode') ||
-                                  localStorage.getItem('feishu-theme');
-                if (storedTheme === 'dark') return true;
-            } catch (e) {
-                // 忽略localStorage访问错误
-            }
-            
-            return false;
-        };
-
-        // 设置主题
-        const setTheme = (dark: boolean) => {
-            setIsDarkMode(dark);
-            const body = document.body;
-            const appContainer = document.getElementById('app');
-            
-            if (dark) {
-                body.setAttribute('theme-mode', 'dark');
-                appContainer?.setAttribute('theme-mode', 'dark');
-            } else {
-                body.removeAttribute('theme-mode');
-                appContainer?.removeAttribute('theme-mode');
-            }
-        };
-
-        // 初始化主题
-        setTheme(detectFeishuTheme());
-
-        // 定期检查主题变化
-        const checkInterval = setInterval(() => {
-            const shouldBeDark = detectFeishuTheme();
-            const isCurrentlyDark = document.body.getAttribute('theme-mode') === 'dark';
-            
-            if (shouldBeDark !== isCurrentlyDark) {
-                setTheme(shouldBeDark);
-            }
-        }, 2000);
-
-        return () => clearInterval(checkInterval);
-    }, []);
 
     // 删除操作已移至Hook中处理
 
@@ -387,7 +314,9 @@ function App() {
                 // 立即关闭弹窗
                 setBatchConfirmVisible(false);
                 setBatchConfirmOperation(null);
-                Toast.success(`分组已创建，包含 ${selectedTasks.length} 个任务`);
+                // 注意：分组信息由后台返回，不需要前端生成
+                // 这里只是临时更新 UI，实际分组信息应该从后台接口响应中获取
+                // 批量部署的提示信息由 handleBatchOperation 统一显示
             } else {
                 // 其他批量操作需要等待结果
                 await handleBatchOperation(batchConfirmOperation, dataSource, handleOperation);
@@ -438,15 +367,11 @@ function App() {
             
             if (!isInitializedRef.current) {
                 // 首次初始化：检查当前状态是否已经有值（从 localStorage 恢复的）
-                // expandedRowKeys 的初始值已经通过 useState(() => loadExpandedGroupKeys()) 从 localStorage 恢复了
+                // expandedRowKeys 的初始值已经通过 useState(() => loadArrayFromStorage(...)) 从 localStorage 恢复了
                 // 使用函数式更新获取当前值，避免依赖 expandedRowKeys
                 setExpandedRowKeys(prevKeys => {
                     // 如果 prevKeys 已经有值（从 localStorage 恢复），则优先使用它
-                    const currentKeys = prevKeys.length > 0 ? prevKeys : loadExpandedGroupKeys();
-                    
-                    console.log('[初始化] 从 localStorage 恢复的状态:', currentKeys);
-                    console.log('[初始化] 当前数据中的分组 keys:', allGroupKeys);
-                    console.log('[初始化] 注意：如果 mock 数据重新生成了 groupKey，保存的状态可能无法匹配');
+                    const currentKeys = prevKeys.length > 0 ? prevKeys : loadArrayFromStorage(STORAGE_KEYS.EXPANDED_GROUP_KEYS);
                     
                     // 记录初始化时的所有分组，用于后续判断新增分组
                     initialGroupKeysRef.current = currentGroupKeysSet;
@@ -458,32 +383,22 @@ function App() {
                         // 新增分组会在后续的 useEffect 中处理（当 isInitializedRef.current === true 时）
                         const validKeys = currentKeys.filter(key => allGroupKeys.includes(key));
                         
-                        console.log('[初始化] 过滤后的有效 keys:', validKeys);
-                        
                         if (validKeys.length > 0) {
                             // 有有效的 keys，保持它们（包括收起状态的分组）
                             if (validKeys.length !== currentKeys.length) {
                                 // 有分组被删除，返回过滤后的 keys
-                                console.log('[初始化] 有分组被删除，返回过滤后的 keys');
                                 return validKeys;
                             } else {
                                 // 没有变化，完全保持当前状态（已恢复的状态，包括收起的分组）
-                                console.log('[初始化] 保持已恢复的状态（包括收起的分组）');
                                 return currentKeys;
                             }
                         } else {
                             // 所有保存的 keys 都不匹配（mock 数据重新生成了新的 groupKey）
                             // 这种情况下，展开所有新分组（因为无法匹配之前的状态）
-                            // 这是正常的，因为 mock 数据的 groupKey 每次都会变化
-                            console.log('[初始化] ⚠️ 所有保存的 keys 都不匹配当前数据');
-                            console.log('[初始化] ⚠️ 这是因为 mock 数据重新生成了新的 groupKey');
-                            console.log('[初始化] ⚠️ 在实际环境中，groupKey 是固定的，不会出现此问题');
-                            console.log('[初始化] 展开所有新分组:', [...allGroupKeys]);
                             return [...allGroupKeys];
                         }
                     } else {
                         // 没有保存的状态，默认展开所有分组
-                        console.log('[初始化] 没有保存的状态，默认展开所有分组');
                         return [...allGroupKeys];
                     }
                 });
@@ -522,105 +437,19 @@ function App() {
     }, [showGrouping, allGroupKeys]);
 
     // 当展开状态变化时，保存到本地存储
+    // 保存分组展开状态变化
     useEffect(() => {
         if (isInitializedRef.current) {
-            console.log('[状态变化保存] expandedRowKeys 变化，保存到 localStorage:', expandedRowKeys);
-            saveExpandedGroupKeys(expandedRowKeys);
-        } else {
-            console.log('[状态变化保存] 初始化中，跳过保存:', expandedRowKeys);
+            saveArrayToStorage(STORAGE_KEYS.EXPANDED_GROUP_KEYS, expandedRowKeys);
         }
     }, [expandedRowKeys]);
 
     // 处理分组展开/收起变化（用户手动操作）
-    const handleExpandedRowsChange = useCallback((keys: any[]) => {
-        // 在 groupBy 模式下，onExpandedRowsChange 接收的 keys 是对象数组
-        // 每个对象包含 groupKey 字段，表示分组的唯一标识符
-        
-        console.log('[分组展开/收起] 接收到 keys:', keys);
-        
-        // 使用函数式更新，确保基于最新的状态
+    const handleExpandedRowsChange = useCallback((keys: unknown[]) => {
         setExpandedRowKeys(prevKeys => {
-            console.log('[分组展开/收起] 当前展开的分组:', prevKeys);
-            
-            // 从 keys 对象数组中提取 groupKey（分组唯一标识符）
-            // 注意：keys 数组中的对象可能是：
-            // 1. 分组对象：{groupKey: 'xxx'} - 这是分组的标识，优先使用（最可靠）
-            // 2. 数据行对象：{key: 'rowKey', groupKey: 'xxx', ...} - 这是分组内的数据行
-            //    Semi Design 在分组展开时，可能会传递分组内的数据行对象
-            //    我们需要从 groupKey 中提取（因为 groupBy: "groupKey"）
-            const normalizedGroupKeys: string[] = keys.map((key, index) => {
-                console.log(`[分组展开/收起] 处理 key[${index}]:`, key, '类型:', typeof key);
-                
-                let extractedGroupKey: string = '';
-                
-                if (typeof key === 'object' && key !== null) {
-                    // 首先判断是否是数据行对象（有 appName 等数据字段）
-                    // 数据行对象不应该被当作分组 key，应该跳过或从它的 groupKey 字段提取其所属的分组
-                    const isDataRow = 'appName' in key && key.appName;
-                    
-                    if (isDataRow) {
-                        // 这是数据行对象，不应该作为分组 key
-                        // 但如果需要，可以从它的 groupKey 字段获取其所属分组
-                        // 注意：在 groupBy 模式下，Semi Design 通常不会传递数据行对象
-                        console.warn(`[分组展开/收起] key[${index}] 是数据行对象，跳过`);
-                        return '';
-                    }
-                    
-                    // 情况1: 优先从 groupKey 字段提取（这是分组的唯一标识符，最可靠）
-                    if ('groupKey' in key && key.groupKey !== undefined && key.groupKey !== null) {
-                        const groupKey = key.groupKey;
-                        if (typeof groupKey === 'string' && groupKey !== '[object Object]') {
-                            extractedGroupKey = groupKey;
-                            console.log(`[分组展开/收起] 从 groupKey 字段提取:`, extractedGroupKey);
-                        } else if (typeof groupKey === 'number') {
-                            extractedGroupKey = String(groupKey);
-                            console.log(`[分组展开/收起] 从 groupKey 字段提取(数字):`, extractedGroupKey);
-                        } else {
-                            console.warn(`[分组展开/收起] groupKey 类型异常:`, typeof groupKey, groupKey);
-                        }
-                    }
-                    // 情况2: 如果没有 groupKey，但有 key 字段
-                    // 在 groupBy 模式下，Semi Design 可能传递简单的分组标识对象 {key: 'groupKey'}
-                    else if ('key' in key && key.key !== undefined && key.key !== null) {
-                        // 如果对象属性很少（<= 3个），可能是分组标识对象
-                        const isGroupObject = Object.keys(key).length <= 3 && !isDataRow;
-                        if (isGroupObject) {
-                            extractedGroupKey = String(key.key);
-                            console.log(`[分组展开/收起] 从 key 字段提取(分组对象):`, extractedGroupKey);
-                        } else {
-                            console.warn(`[分组展开/收起] 对象可能是数据行，跳过`);
-                        }
-                    } else {
-                        console.warn(`[分组展开/收起] 对象没有 groupKey 或 key 字段:`, Object.keys(key));
-                    }
-                } else {
-                    // 如果是字符串或数字，直接作为 groupKey 使用
-                    extractedGroupKey = String(key);
-                    console.log(`[分组展开/收起] 直接使用原始值:`, extractedGroupKey);
-                }
-                
-                // 统一处理 '0' 的情况并返回（默认分组）
-                const result = extractedGroupKey === '0' ? '0' : extractedGroupKey;
-                console.log(`[分组展开/收起] key[${index}] 提取结果:`, result);
-                return result;
-            }).filter(groupKey => {
-                const valid = groupKey !== '';
-                if (!valid) {
-                    console.warn(`[分组展开/收起] 过滤掉无效的 groupKey:`, groupKey);
-                }
-                return valid;
-            }); // 过滤掉无效的 groupKey
-            
-            // 去重并排序，确保数组一致性
-            const uniqueGroupKeys = Array.from(new Set(normalizedGroupKeys)).sort();
-            
-            console.log('[分组展开/收起] 提取后的分组 keys:', uniqueGroupKeys);
-            console.log('[分组展开/收起] 更新后的展开状态:', uniqueGroupKeys);
-            
+            const uniqueGroupKeys = extractGroupKeys(keys);
             // 立即保存到 localStorage（用户操作时立即保存）
-            saveExpandedGroupKeys(uniqueGroupKeys);
-            console.log('[分组展开/收起] 已保存到 localStorage:', uniqueGroupKeys);
-            
+            saveArrayToStorage(STORAGE_KEYS.EXPANDED_GROUP_KEYS, uniqueGroupKeys);
             return uniqueGroupKeys;
         });
     }, []);
@@ -668,9 +497,40 @@ function App() {
         return map;
     }, [dataSource]);
 
+    // 分组顺序比较函数（固定分组顺序，确保排序时分组顺序不变）
+    // 分组顺序规则：
+    // 1. 按照提交批量部署时间排序（时间早的在前）
+    // 2. 默认分组（groupKey 为 '0'）展示在最下方
+    const compareGroupOrder = useCallback((a: DataItem, b: DataItem): number => {
+        const groupKeyA = a.groupKey || '0';
+        const groupKeyB = b.groupKey || '0';
+        
+        // 如果属于同一分组，返回 0（由列的 sorter 处理分组内的排序）
+        if (groupKeyA === groupKeyB) {
+            return 0;
+        }
+        
+        // 规则2：默认分组（groupKey 为 '0'）排在最后
+        if (groupKeyA === '0' && groupKeyB !== '0') {
+            return 1;
+        }
+        if (groupKeyA !== '0' && groupKeyB === '0') {
+            return -1;
+        }
+        
+        // 规则1：分组按提交批量部署时间正序排序（时间早的在前）
+        const groupInfoA = groupInfoMap.get(groupKeyA);
+        const groupInfoB = groupInfoMap.get(groupKeyB);
+        const createTimeA = groupInfoA?.createTime || 0;
+        const createTimeB = groupInfoB?.createTime || 0;
+        return createTimeA - createTimeB;
+    }, [groupInfoMap]);
+
     // 构建表格数据源
     // 初始数据 groupKey 默认为 '0'，对应默认分组
-    // 按照分组顺序排序：先显示分组（按提交时间正序），最后显示默认分组（groupKey 为 '0' 的任务）
+    // 按照分组顺序排序：
+    // 1. 分组按提交批量部署时间正序排列（时间早的在前）
+    // 2. 默认分组（groupKey 为 '0' 的任务）显示在最下方
     const tableDataSource = useMemo(() => {
         const source = dataSource || [];
         
@@ -686,32 +546,13 @@ function App() {
         }));
         
         // 按照分组顺序排序：
-        // 1. 分组按提交时间正序排列（时间早的在前）
+        // 1. 分组按提交批量部署时间正序排列（时间早的在前）
         // 2. 默认分组（groupKey 为 '0' 的任务）显示在最下方
+        // 3. 同一分组内的任务保持原顺序（分组内的排序由列的 sorter 处理）
         return processedSource.sort((a, b) => {
-            // 获取 groupKey，默认为 '0'
-            const groupKeyA = a.groupKey || '0';
-            const groupKeyB = b.groupKey || '0';
-            
-            // 默认分组（groupKey 为 '0'）排在最后
-            if (groupKeyA === '0' && groupKeyB !== '0') {
-                return 1;
-            }
-            if (groupKeyA !== '0' && groupKeyB === '0') {
-                return -1;
-            }
-            if (groupKeyA === '0' && groupKeyB === '0') {
-                return 0; // 默认分组内部保持原顺序
-            }
-            
-            // 分组按提交时间正序排序（时间早的在前）
-            const groupInfoA = groupInfoMap.get(groupKeyA);
-            const groupInfoB = groupInfoMap.get(groupKeyB);
-            const createTimeA = groupInfoA?.createTime || 0;
-            const createTimeB = groupInfoB?.createTime || 0;
-            return createTimeA - createTimeB;
+            return compareGroupOrder(a, b);
         });
-    }, [dataSource, showGrouping, groupInfoMap]);
+    }, [dataSource, showGrouping, compareGroupOrder]);
 
     // 获取分组标签颜色（根据分组编号循环使用不同颜色）
     const getGroupTagColor = useCallback((groupNumber: number) => {
@@ -953,26 +794,30 @@ function App() {
     };
 
     // 表格列配置
-    const columns = [
+    // 注意：排序只作用于数据行，分组顺序保持不变
+    const columns = useMemo(() => [
             {
               title: '应用名称',
               dataIndex: 'appName',
             width: 200,
             fixed: 'left' as const,
-            filters: [
-                { text: '用户服务', value: '用户服务' },
-                { text: '订单服务', value: '订单服务' },
-                { text: '支付服务', value: '支付服务' },
-                { text: '商品服务', value: '商品服务' },
-            ],
-            onFilter: (value, record) => record.appName && typeof record.appName === 'string' && record.appName.includes(value),
-            sorter: (a, b) => (a.appName.length - b.appName.length > 0 ? 1 : -1),
+            sorter: (a, b) => {
+                // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
+                const groupOrder = compareGroupOrder(a, b);
+                if (groupOrder !== 0) return groupOrder;
+                // 同一分组内按应用名称排序
+                return (a.appName.length - b.appName.length > 0 ? 1 : -1);
+            },
             },
             {
               title: '部署状态',
             dataIndex: 'taskStatus',
             width: 120,
             sorter: (a, b) => {
+                // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
+                const groupOrder = compareGroupOrder(a, b);
+                if (groupOrder !== 0) return groupOrder;
+                // 同一分组内按部署状态排序
                 const orderA = STATUS_CONFIG[a.taskStatus]?.order || 999;
                 const orderB = STATUS_CONFIG[b.taskStatus]?.order || 999;
                 return orderA - orderB;
@@ -983,47 +828,49 @@ function App() {
               title: '版本号',
             dataIndex: 'version',
             width: 120,
-            sorter: (a, b) => (a.version.localeCompare(b.version)),
+            sorter: (a, b) => {
+                // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
+                const groupOrder = compareGroupOrder(a, b);
+                if (groupOrder !== 0) return groupOrder;
+                // 同一分组内按版本号排序
+                return a.version.localeCompare(b.version);
+            },
             },
             {
               title: '发布集群',
-            dataIndex: 'cluster',
+              dataIndex: 'cluster',
             width: 280,
-            sorter: (a, b) => a.cluster.localeCompare(b.cluster),
-            filters: [
-                { text: 'CBG多业务森华机房k8s集群(1.15)', value: 'CBG多业务森华机房k8s集群(1.15)' },
-                { text: '输入法业务酒仙桥机房k8s集群(1.15)', value: '输入法业务酒仙桥机房k8s集群(1.15)' },
-                { text: '公研北京阿里云机房k8s集群(1.32.4)', value: '公研北京阿里云机房k8s集群(1.32.4)' },
-                { text: '输入法北京阿里云机房k8s集群(1.32.4)', value: '输入法北京阿里云机房k8s集群(1.32.4)' },
-            ],
-            onFilter: (value, record) => record.cluster === value,
+            sorter: (a, b) => {
+                // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
+                const groupOrder = compareGroupOrder(a, b);
+                if (groupOrder !== 0) return groupOrder;
+                // 同一分组内按发布集群排序
+                return a.cluster.localeCompare(b.cluster);
+            },
             },
             {
               title: '命名空间',
-            dataIndex: 'namespace',
+              dataIndex: 'namespace',
             width: 120,
-            sorter: (a, b) => a.namespace.localeCompare(b.namespace),
-            filters: [
-                { text: 'default', value: 'default' },
-                { text: 'production', value: 'production' },
-                { text: 'staging', value: 'staging' },
-                { text: 'development', value: 'development' },
-            ],
-            onFilter: (value, record) => record.namespace === value,
+            sorter: (a, b) => {
+                // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
+                const groupOrder = compareGroupOrder(a, b);
+                if (groupOrder !== 0) return groupOrder;
+                // 同一分组内按命名空间排序
+                return a.namespace.localeCompare(b.namespace);
+            },
             },
             {
               title: '环境标签',
-            dataIndex: 'envTag',
+              dataIndex: 'envTag',
             width: 120,
-            sorter: (a, b) => a.envTag.localeCompare(b.envTag),
-            filters: [
-                { text: 'prod', value: 'prod' },
-                { text: 'test', value: 'test' },
-                { text: 'dev', value: 'dev' },
-                { text: 'staging', value: 'staging' },
-                { text: 'gray', value: 'gray' },
-            ],
-            onFilter: (value, record) => record.envTag === value,
+            sorter: (a, b) => {
+                // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
+                const groupOrder = compareGroupOrder(a, b);
+                if (groupOrder !== 0) return groupOrder;
+                // 同一分组内按环境标签排序
+                return a.envTag.localeCompare(b.envTag);
+            },
             render: (text) => <Tag color="blue" className="semi-tag-blue">{text}</Tag>,
         },
         {
@@ -1031,6 +878,10 @@ function App() {
             dataIndex: 'deployOrder',
             width: 120,
             sorter: (a, b) => {
+                // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
+                const groupOrder = compareGroupOrder(a, b);
+                if (groupOrder !== 0) return groupOrder;
+                // 同一分组内按部署顺序排序
                 // 处理undefined值，undefined排在最后
                 const orderA = a.deployOrder || 999999;
                 const orderB = b.deployOrder || 999999;
@@ -1093,11 +944,15 @@ function App() {
                 }}>-</span>;
             }
         },
-        {
+            {
             title: 'Pod状态',
             dataIndex: 'podStatus',
             width: 120,
             sorter: (a, b) => {
+                // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
+                const groupOrder = compareGroupOrder(a, b);
+                if (groupOrder !== 0) return groupOrder;
+                // 同一分组内按Pod状态排序
                 const orderA = POD_STATUS_CONFIG[a.podStatus]?.order || 999;
                 const orderB = POD_STATUS_CONFIG[b.podStatus]?.order || 999;
                 return orderA - orderB;
@@ -1111,13 +966,26 @@ function App() {
               title: '部署时间',
               dataIndex: 'deployTime',
             width: 150,
-            sorter: (a, b) => (a.deployTime - b.deployTime > 0 ? 1 : -1),
+            sorter: (a, b) => {
+                // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
+                const groupOrder = compareGroupOrder(a, b);
+                if (groupOrder !== 0) return groupOrder;
+                // 同一分组内按部署时间排序
+                return (a.deployTime - b.deployTime > 0 ? 1 : -1);
+            },
             render: value => dateFns.format(new Date(value), 'yyyy-MM-dd HH:mm'),
             },
             {
               title: '部署人',
             dataIndex: 'deployer',
             width: 120,
+            sorter: (a, b) => {
+                // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
+                const groupOrder = compareGroupOrder(a, b);
+                if (groupOrder !== 0) return groupOrder;
+                // 同一分组内按部署人排序
+                return a.deployer.localeCompare(b.deployer);
+            },
             render: (text, record) => (
                 <div>
                     <Avatar size="small" color={record.avatarBg} style={{ marginRight: 4 }}>
@@ -1140,7 +1008,7 @@ function App() {
                 />
             ),
         },
-    ];
+    ], [selectedRowKeys, handleDeployOrderChange, handleOperation, getButtonConfig, compareGroupOrder]);
 
     const rowSelection = useMemo(
         () => ({
@@ -1229,166 +1097,20 @@ function App() {
         secondary: isDarkMode ? 'var(--semi-color-text-2)' : '#8c8c8c'
     };
 
-    // 生成测试数据（Mock数据，用于开发测试）
-    // 注意：生产环境应该从 API 获取数据，包括：
-    // 1. 部署任务数据（包含 groupKey、deployStatus 等所有字段）
-    // 2. 分组 key 由服务端返回，不应该在前端生成或存储到本地缓存
-    // 3. 只有分组展开/收起状态存储在浏览器缓存中（通过 EXPANDED_GROUP_KEYS_STORAGE_KEY）
-    // 
-    // Mock 数据说明：
-    // - 所有数据字段（包括 deployStatus、版本号、时间等）都是固定值
-    // - 每次刷新页面时，mock 数据完全相同，方便测试和调试
-    // - 所有任务默认无分组（groupKey 为 undefined，默认为 '0'，显示在默认分组中）
-    // - 用户可以通过选择任务并点击"批量部署"来创建新分组，完整体验分组创建流程
-    const getData = (): DataItem[] => {
-        const data: DataItem[] = [];
-        const appNames = ['用户服务', '订单服务', '支付服务', '商品服务', '库存服务', '通知服务'];
-        const deployStatuses = ['success', 'failed', 'pending'];
-        const podStatuses = ['running', 'pending', 'failed'];
-        const clusters = [
-            'CBG多业务森华机房k8s集群(1.15)',
-            '输入法业务酒仙桥机房k8s集群(1.15)',
-            '公研北京阿里云机房k8s集群(1.32.4)',
-            '输入法北京阿里云机房k8s集群(1.32.4)'
-        ];
-        const namespaces = ['default', 'production', 'staging', 'development'];
-        const envTags = ['prod', 'test', 'dev', 'staging', 'gray'];
-        const deployers = ['张三', '李四', '王五', '赵六', '钱七'];
-        // 添加不同状态的任务，包括部署中、审批中、回滚中状态用于测试
-        const taskStatuses = [
-            DeploymentStatus.PENDING,
-            DeploymentStatus.PENDING,
-            DeploymentStatus.PENDING,
-            DeploymentStatus.PENDING,
-            DeploymentStatus.PENDING,
-            DeploymentStatus.PENDING,
-            DeploymentStatus.PENDING,
-            DeploymentStatus.DEPLOYING,     // 部署中 - 不允许选择
-            DeploymentStatus.DEPLOYING,     // 部署中 - 不允许选择
-            DeploymentStatus.APPROVING,     // 审批中 - 不允许选择
-            DeploymentStatus.APPROVING,     // 审批中 - 不允许选择
-            DeploymentStatus.ROLLING_BACK,  // 回滚中 - 不允许选择
-            DeploymentStatus.ROLLING_BACK  // 回滚中 - 不允许选择
-        ];
-        
-        // Mock 数据默认无分组，方便用户完整体验从无分组到创建分组的流程
-        // 所有任务的 groupKey 都设为 undefined，会在"默认分组"中显示
-        // 用户可以通过选择任务并点击"批量部署"来创建新分组
-        
-        // 使用固定的基准时间戳（2024-01-01 00:00:00），确保每次生成的数据一致
-        const BASE_TIMESTAMP = new Date('2024-01-01T00:00:00').valueOf();
-        
-        for (let i = 0; i < 46; i++) {
-            // 使用基于索引的确定性计算，确保每次生成的数据完全相同
-            const offsetNumber = (i * 1000) % 199;
-            const appIndex = i % appNames.length;
-            const deployerIndex = i % deployers.length;
-            
-            // 明确指定某些任务的状态，用于测试不同状态的复选框禁用功能
-            // 默认使用待部署状态，特定索引使用其他状态
-            let taskStatus: DeploymentStatus;
-            if (i === 8) {
-                // 任务索引 8：部署中
-                taskStatus = DeploymentStatus.DEPLOYING;
-            } else if (i === 9) {
-                // 任务索引 9：部署中
-                taskStatus = DeploymentStatus.DEPLOYING;
-            } else if (i === 15) {
-                // 任务索引 15：审批中
-                taskStatus = DeploymentStatus.APPROVING;
-            } else if (i === 16) {
-                // 任务索引 16：审批中
-                taskStatus = DeploymentStatus.APPROVING;
-            } else if (i === 22) {
-                // 任务索引 22：回滚中
-                taskStatus = DeploymentStatus.ROLLING_BACK;
-            } else if (i === 23) {
-                // 任务索引 23：回滚中
-                taskStatus = DeploymentStatus.ROLLING_BACK;
-            } else {
-                // 其他任务：待部署状态
-                taskStatus = DeploymentStatus.PENDING;
-            }
-            
-            // Mock 数据默认无分组（groupKey 为 undefined，默认为 '0'，显示在默认分组中）
-            // 用户可以通过操作创建新分组
-            const taskGroupKey: string | undefined = undefined;
-            
-            data.push({
-                key: '' + i,
-                appName: `${appNames[appIndex]}${i > 5 ? `-${i}` : ''}`,
-                deployStatus: deployStatuses[i % deployStatuses.length], // 固定模式
-                podStatus: podStatuses[i % podStatuses.length], // 固定模式
-                version: `v1.${i % 10}.${offsetNumber % 10}`, // 基于索引，固定值
-                cluster: clusters[i % clusters.length], // 固定模式
-                namespace: namespaces[i % namespaces.length], // 固定模式
-                envTag: envTags[i % envTags.length], // 固定模式
-                deployTime: BASE_TIMESTAMP + offsetNumber * DAY, // 使用固定基准时间 + 基于索引的偏移
-                deployer: deployers[deployerIndex], // 固定模式
-                avatarBg: ['grey', 'red', 'blue', 'green', 'orange'][i % 5], // 固定模式
-                taskStatus: taskStatus, // 明确指定的状态
-                deployOrder: undefined, // 初始时没有部署顺序
-                groupKey: taskGroupKey, // mock 分组 key（固定值，刷新时不变）
-            });
-        }
-        
-        // 按照发布集群、命名空间、环境标签进行排序
-        return data.sort((a, b) => {
-            // 首先按发布集群排序
-            const clusterCompare = a.cluster.localeCompare(b.cluster);
-            if (clusterCompare !== 0) return clusterCompare;
-            
-            // 然后按命名空间排序
-            const namespaceCompare = a.namespace.localeCompare(b.namespace);
-            if (namespaceCompare !== 0) return namespaceCompare;
-            
-            // 最后按环境标签排序
-            return a.envTag.localeCompare(b.envTag);
-        });
-    };
-
-    // 从本地存储加载任务数据（操作后的真实数据）
-    const loadStoredTasks = (): DataItem[] | null => {
-        try {
-            const stored = localStorage.getItem(TASKS_DATA_STORAGE_KEY);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    console.log('[数据加载] 从 localStorage 恢复操作后的任务数据:', parsed.length, '条');
-                    return parsed;
-                }
-            }
-        } catch (error) {
-            console.error('[数据加载] 读取 localStorage 失败:', error);
-        }
-        return null;
-    };
-    
     // 保存任务数据到本地存储（操作后的真实数据）
-    const saveTasks = (tasks: DataItem[]): void => {
-        try {
-            localStorage.setItem(TASKS_DATA_STORAGE_KEY, JSON.stringify(tasks));
-            console.log('[数据保存] 已保存操作后的任务数据到 localStorage:', tasks.length, '条');
-        } catch (error) {
-            console.error('[数据保存] 保存到 localStorage 失败:', error);
-        }
-    };
+    const saveTasks = useCallback((tasks: DataItem[]): void => {
+        saveToStorage(STORAGE_KEYS.TASKS_DATA, tasks);
+    }, []);
 
     // 初始化数据加载：
     // 1. 优先从 localStorage 加载操作后的真实数据（如果有）
     // 2. 如果没有，则使用 mock 数据作为初始数据
-    // 注意：这样既能模拟真实场景（操作后的数据会保存），又能方便调试（初始数据固定）
     useEffect(() => {
-                const storedTasks = loadStoredTasks();
-        if (storedTasks && storedTasks.length > 0) {
-            // 有操作后的数据，使用真实数据
-            console.log('[数据加载] 使用操作后的真实数据');
+        const storedTasks = loadFromStorage<DataItem[]>(STORAGE_KEYS.TASKS_DATA);
+        if (storedTasks && Array.isArray(storedTasks) && storedTasks.length > 0) {
             setData(storedTasks);
-                } else {
-            // 没有操作后的数据，使用 mock 数据
-            console.log('[数据加载] 使用 mock 初始数据');
-            const mockData = getData();
-            setData(mockData);
+        } else {
+            setData(generateMockTasks());
         }
     }, []);
     
@@ -1404,7 +1126,7 @@ function App() {
             // 保存操作后的真实数据（包括部署顺序）
             saveTasks(dataSource);
         }
-    }, [dataSource]);
+    }, [dataSource, saveTasks]);
 
 
     return (
@@ -1536,7 +1258,7 @@ function App() {
                     <div style={{
                         width: '4px',
                         height: '20px',
-                        backgroundColor: '#1e40af',
+                        backgroundColor: '#3250eb',
                         borderRadius: '2px',
                         marginRight: '12px'
                     }}></div>
@@ -1847,6 +1569,30 @@ function App() {
             {batchConfirmOperation === OperationType.ROLLBACK && <>• 只有"部署失败"状态的任务可以回滚</>}
             {batchConfirmOperation === OperationType.OPS_INTERVENTION && <>• 只有"部署失败"或"回滚中"状态的任务可以运维介入</>}
           </div>
+        </div>
+      </Modal>
+
+      {/* 删除确认弹窗 */}
+      <Modal
+        title="删除确认"
+        visible={deleteConfirmVisible}
+        onOk={confirmDelete}
+        onCancel={() => {
+          setDeleteConfirmVisible(false);
+          setDeleteConfirmTask(null);
+        }}
+        okText="确认删除"
+        cancelText="取消"
+        okButtonProps={{ type: 'danger' }}
+        width={400}
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#666' }}>
+            确定要删除任务 <strong>{deleteConfirmTask?.appName}</strong> 吗？
+          </p>
+          <p style={{ margin: '0', fontSize: '12px', color: '#999' }}>
+            此操作不可恢复，请谨慎操作。
+          </p>
         </div>
       </Modal>
     </div>

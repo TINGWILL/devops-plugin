@@ -30,7 +30,7 @@ export interface UseDeploymentStatusReturn {
   tasks: DeploymentTask[];
   setTasks: (tasks: DeploymentTask[] | ((prev: DeploymentTask[]) => DeploymentTask[])) => void;
   updateTaskStatus: (key: string, status: DeploymentStatus) => void;
-  handleOperation: (operation: OperationType, task: DeploymentTask) => Promise<void>;
+  handleOperation: (operation: OperationType, task: DeploymentTask, silent?: boolean) => Promise<void>;
   getButtonConfig: (status: DeploymentStatus) => { first: any; second: any };
   isOperationApplicable: (status: DeploymentStatus, operation: OperationType) => boolean;
 }
@@ -55,10 +55,14 @@ export const useDeploymentStatus = (initialTasks: DeploymentTask[] = []): UseDep
   }, []);
 
   // 处理部署操作
-  const handleDeploy = useCallback(async (task: DeploymentTask) => {
-    // 开始部署
+  // silent: 是否静默执行（不显示 Toast 提示），用于批量操作
+  const handleDeploy = useCallback(async (task: DeploymentTask, silent: boolean = false) => {
+    // 只有非批量操作时才显示 toast 提示
+    if (!silent) {
+      Toast.success(`${task.appName} 开始执行部署`);
+    }
+    // 状态更新
     updateTaskStatus(task.key, DeploymentStatus.DEPLOYING);
-    Toast.success(`${task.appName} 开始执行部署`);
     
     // 模拟部署过程
     return new Promise<void>((resolve) => {
@@ -67,11 +71,11 @@ export const useDeploymentStatus = (initialTasks: DeploymentTask[] = []): UseDep
         const isSuccess = Math.random() > 0.2; // 80% 成功率
         
         if (isSuccess) {
+          // 部署成功 - 状态更新，无需 toast（状态变化不提示）
           updateTaskStatus(task.key, DeploymentStatus.DEPLOYED);
-          Toast.success(`${task.appName} 部署成功`);
         } else {
+          // 部署失败 - 状态更新，无需 toast（状态变化不提示）
           updateTaskStatus(task.key, DeploymentStatus.DEPLOYMENT_FAILED);
-          Toast.error(`${task.appName} 部署失败`);
         }
         
         resolve();
@@ -80,21 +84,36 @@ export const useDeploymentStatus = (initialTasks: DeploymentTask[] = []): UseDep
   }, [updateTaskStatus]);
 
   // 处理申请加白操作
-  const handleWhitelist = useCallback(async (task: DeploymentTask) => {
+  // silent: 是否静默执行（不显示 Toast 提示），用于批量操作
+  const handleWhitelist = useCallback(async (task: DeploymentTask, silent: boolean = false) => {
+    // 只有非批量操作时才显示 toast 提示
+    if (!silent) {
+      Toast.info(`${task.appName} 申请加白已提交，等待审批`);
+    }
+    // 状态更新
     updateTaskStatus(task.key, DeploymentStatus.APPROVING);
-    Toast.info(`${task.appName} 申请加白已提交，等待审批`);
   }, [updateTaskStatus]);
 
   // 处理验证通过操作
-  const handleVerifyPass = useCallback(async (task: DeploymentTask) => {
+  // silent: 是否静默执行（不显示 Toast 提示），用于批量操作
+  const handleVerifyPass = useCallback(async (task: DeploymentTask, silent: boolean = false) => {
+    // 只有非批量操作时才显示 toast 提示
+    if (!silent) {
+      Toast.success(`${task.appName} 验证通过，部署结束`);
+    }
+    // 状态更新
     updateTaskStatus(task.key, DeploymentStatus.DEPLOYMENT_ENDED);
-    Toast.success(`${task.appName} 验证通过，部署结束`);
   }, [updateTaskStatus]);
 
   // 处理回滚操作
-  const handleRollback = useCallback(async (task: DeploymentTask) => {
+  // silent: 是否静默执行（不显示 Toast 提示），用于批量操作
+  const handleRollback = useCallback(async (task: DeploymentTask, silent: boolean = false) => {
+    // 只有非批量操作时才显示 toast 提示
+    if (!silent) {
+      Toast.info(`${task.appName} 开始回滚`);
+    }
+    // 状态更新
     updateTaskStatus(task.key, DeploymentStatus.ROLLING_BACK);
-    Toast.info(`${task.appName} 开始回滚`);
     
     // 模拟回滚过程
     return new Promise<void>((resolve) => {
@@ -102,11 +121,11 @@ export const useDeploymentStatus = (initialTasks: DeploymentTask[] = []): UseDep
         const isSuccess = Math.random() > 0.1; // 90% 成功率
         
         if (isSuccess) {
+          // 回滚成功 - 状态更新，无需 toast（状态变化不提示）
           updateTaskStatus(task.key, DeploymentStatus.DEPLOYMENT_ENDED);
-          Toast.success(`${task.appName} 回滚成功，部署结束`);
         } else {
-          // 回滚失败，需要运维介入
-          Toast.error(`${task.appName} 回滚失败，需要运维介入`);
+          // 回滚失败 - 状态更新，无需 toast（状态变化不提示）
+          updateTaskStatus(task.key, DeploymentStatus.DEPLOYMENT_FAILED);
         }
         
         resolve();
@@ -115,9 +134,14 @@ export const useDeploymentStatus = (initialTasks: DeploymentTask[] = []): UseDep
   }, [updateTaskStatus]);
 
   // 处理运维介入操作
-  const handleOpsIntervention = useCallback(async (task: DeploymentTask) => {
+  // silent: 是否静默执行（不显示 Toast 提示），用于批量操作
+  const handleOpsIntervention = useCallback(async (task: DeploymentTask, silent: boolean = false) => {
+    // 只有非批量操作时才显示 toast 提示
+    if (!silent) {
+      Toast.info(`${task.appName} 运维介入，部署结束`);
+    }
+    // 状态更新
     updateTaskStatus(task.key, DeploymentStatus.DEPLOYMENT_ENDED);
-    Toast.info(`${task.appName} 运维介入，部署结束`);
   }, [updateTaskStatus]);
 
   // 处理删除操作
@@ -127,39 +151,46 @@ export const useDeploymentStatus = (initialTasks: DeploymentTask[] = []): UseDep
   }, []);
 
   // 通用操作处理函数
-  const handleOperation = useCallback(async (operation: OperationType, task: DeploymentTask) => {
+  // silent: 是否静默执行（不显示 Toast 提示），用于批量操作
+  const handleOperation = useCallback(async (operation: OperationType, task: DeploymentTask, silent: boolean = false) => {
     // 检查操作是否适用于当前状态
     if (!isOperationApplicable(task.taskStatus, operation)) {
-      Toast.warning(`${getOperationTypeName(operation)}操作不适用于当前状态`);
+      if (!silent) {
+        Toast.warning(`${getOperationTypeName(operation)}操作不适用于当前状态`);
+      }
       return;
     }
 
     try {
       switch (operation) {
         case OperationType.DEPLOY:
-          await handleDeploy(task);
+          await handleDeploy(task, silent);
           break;
         case OperationType.WHITELIST:
-          await handleWhitelist(task);
+          await handleWhitelist(task, silent);
           break;
         case OperationType.VERIFY_PASS:
-          await handleVerifyPass(task);
+          await handleVerifyPass(task, silent);
           break;
         case OperationType.ROLLBACK:
-          await handleRollback(task);
+          await handleRollback(task, silent);
           break;
         case OperationType.OPS_INTERVENTION:
-          await handleOpsIntervention(task);
+          await handleOpsIntervention(task, silent);
           break;
         case OperationType.DELETE:
           await handleDelete(task);
           break;
         default:
-          Toast.warning('未知操作');
+          if (!silent) {
+            Toast.warning('未知操作');
+          }
       }
     } catch (error) {
       console.error('操作执行失败:', error);
-      Toast.error('操作执行失败');
+      if (!silent) {
+        Toast.error('操作执行失败');
+      }
     }
   }, [
     handleDeploy,

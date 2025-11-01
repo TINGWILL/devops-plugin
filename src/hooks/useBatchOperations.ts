@@ -12,7 +12,7 @@ export interface UseBatchOperationsReturn {
   selectedKeys: string[];
   setSelectedKeys: (keys: string[]) => void;
   getBatchApplicability: (tasks: DeploymentTask[], operation: OperationType) => BatchOperationResult;
-  handleBatchOperation: (operation: OperationType, tasks: DeploymentTask[], onOperation: (operation: OperationType, task: DeploymentTask) => Promise<void>, onSuccess?: () => void) => Promise<void>;
+  handleBatchOperation: (operation: OperationType, tasks: DeploymentTask[], onOperation: (operation: OperationType, task: DeploymentTask, silent?: boolean) => Promise<void>, onSuccess?: () => void) => Promise<void>;
   canPerformBatchOperation: (tasks: DeploymentTask[], operation: OperationType) => boolean;
 }
 
@@ -52,7 +52,7 @@ export const useBatchOperations = (): UseBatchOperationsReturn => {
   const handleBatchOperation = useCallback(async (
     operation: OperationType, 
     tasks: DeploymentTask[], 
-    onOperation: (operation: OperationType, task: DeploymentTask) => Promise<void>,
+    onOperation: (operation: OperationType, task: DeploymentTask, silent?: boolean) => Promise<void>,
     onSuccess?: () => void
   ) => {
     if (selectedKeys.length === 0) {
@@ -81,12 +81,17 @@ export const useBatchOperations = (): UseBatchOperationsReturn => {
       // 对于批量部署，不等待执行结果，立即调用接口即可
       if (operation === OperationType.DEPLOY) {
         // 批量部署：立即调用接口，不等待结果
+        // 使用静默模式，不显示单个任务的 Toast 提示
         applicable.forEach((task) => {
           // 不等待 Promise，立即触发接口调用
-          onOperation(operation, task).catch((error) => {
+          // 传递 silent: true 参数，让 handleOperation 静默执行（不显示单个任务的提示）
+          onOperation(operation, task, true).catch((error) => {
             console.error(`任务 ${task.key} 部署接口调用失败:`, error);
           });
         });
+        
+        // 显示批量部署提示（仅显示批量级别的提示）
+        Toast.success(`提交批量部署任务成功，共 ${applicable.length} 个任务`);
         
         // 立即返回，不等待执行结果
         // 清空选中状态
@@ -96,13 +101,16 @@ export const useBatchOperations = (): UseBatchOperationsReturn => {
           onSuccess();
         }
       } else {
-        // 其他批量操作：等待执行结果
+        // 其他批量操作（申请加白、验证通过等）：等待执行结果
+        // 使用静默模式，不显示单个任务的 Toast 提示
         const promises = applicable.map(async (task) => {
-          await onOperation(operation, task);
+          // 传递 silent: true 参数，让 handleOperation 静默执行（不显示单个任务的提示）
+          await onOperation(operation, task, true);
         });
         
         await Promise.all(promises);
         
+        // 显示批量操作成功提示（仅显示批量级别的提示，不显示单个任务的提示）
         Toast.success(`批量${operationName}成功，共处理 ${applicable.length} 个任务`);
         
         // 清空选中状态
