@@ -43,6 +43,7 @@ export const useDeploymentStatus = (initialTasks: DeploymentTask[] = []): UseDep
   const [tasks, setTasks] = useState<DeploymentTask[]>(initialTasks);
 
   // 更新任务状态（保留所有字段，包括 groupKey、deployOrder 等）
+  // 注意：部署顺序不会因为状态变化而被清除，只有待部署状态时才能修改
   const updateTaskStatus = useCallback((key: string, status: DeploymentStatus) => {
     setTasks(prev => prev.map(task => {
       if (task.key === key) {

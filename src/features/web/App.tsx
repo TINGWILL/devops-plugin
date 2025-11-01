@@ -103,7 +103,8 @@ function App() {
     const {
         selectedKeys: selectedRowKeys,
         setSelectedKeys: setSelectedRowKeys,
-        handleBatchOperation
+        handleBatchOperation,
+        canPerformBatchOperation
     } = useBatchOperations();
     
     // 删除确认弹窗相关状态已移除
@@ -121,10 +122,15 @@ function App() {
     // 飞书项目系统主题跟随
     const [isDarkMode, setIsDarkMode] = useState(false);
     
-    // 本地存储Key常量
+    // ========== 数据存储策略 ==========
+    // 1. 分组 key 和部署任务数据：从 API 获取
+    //    - 初始数据：使用 mock 数据（固定的，用于开发测试）
+    //    - 操作后的数据：保存到浏览器缓存，刷新后优先使用（模拟从 API 获取的真实数据）
+    // 2. 分组展开/收起状态：存储在浏览器缓存中（通过 EXPANDED_GROUP_KEYS_STORAGE_KEY），服务端不做多余存储
     const EXPANDED_GROUP_KEYS_STORAGE_KEY = 'devops_expanded_group_keys';
+    const TASKS_DATA_STORAGE_KEY = 'devops_tasks_data'; // 存储操作后的任务数据（用于仿真）
     
-    // 从本地存储加载分组展开状态
+    // 从本地存储加载分组展开状态（这是唯一存储在浏览器缓存的状态）
     const loadExpandedGroupKeys = (): string[] => {
         try {
             const stored = localStorage.getItem(EXPANDED_GROUP_KEYS_STORAGE_KEY);
@@ -140,11 +146,13 @@ function App() {
         return [];
     };
 
-    // 保存分组展开状态到本地存储
+    // 保存分组展开状态到本地存储（这是唯一存储在浏览器缓存的状态）
     const saveExpandedGroupKeys = (keys: string[]): void => {
         try {
             localStorage.setItem(EXPANDED_GROUP_KEYS_STORAGE_KEY, JSON.stringify(keys));
+            console.log('[保存分组状态] 已保存到 localStorage:', keys);
         } catch (error) {
+            console.error('[保存分组状态] 保存失败:', error);
             // 保存到本地存储失败，忽略错误
         }
     };
@@ -314,6 +322,13 @@ function App() {
         };
         
         const operation = operationMap[type];
+        
+        // 检查是否有符合条件的任务可以执行该操作
+        if (!canPerformBatchOperation(dataSource, operation)) {
+            const operationName = getOperationTypeName(operation);
+            Toast.warning(`选中的任务中没有可以执行${operationName}操作的任务`);
+            return;
+        }
         if (operation) {
             setBatchConfirmOperation(operation);
             setBatchConfirmVisible(true);
@@ -429,6 +444,10 @@ function App() {
                     // 如果 prevKeys 已经有值（从 localStorage 恢复），则优先使用它
                     const currentKeys = prevKeys.length > 0 ? prevKeys : loadExpandedGroupKeys();
                     
+                    console.log('[初始化] 从 localStorage 恢复的状态:', currentKeys);
+                    console.log('[初始化] 当前数据中的分组 keys:', allGroupKeys);
+                    console.log('[初始化] 注意：如果 mock 数据重新生成了 groupKey，保存的状态可能无法匹配');
+                    
                     // 记录初始化时的所有分组，用于后续判断新增分组
                     initialGroupKeysRef.current = currentGroupKeysSet;
                     
@@ -439,15 +458,32 @@ function App() {
                         // 新增分组会在后续的 useEffect 中处理（当 isInitializedRef.current === true 时）
                         const validKeys = currentKeys.filter(key => allGroupKeys.includes(key));
                         
-                        if (validKeys.length !== currentKeys.length) {
-                            // 有分组被删除，返回过滤后的 keys
-                            return validKeys;
+                        console.log('[初始化] 过滤后的有效 keys:', validKeys);
+                        
+                        if (validKeys.length > 0) {
+                            // 有有效的 keys，保持它们（包括收起状态的分组）
+                            if (validKeys.length !== currentKeys.length) {
+                                // 有分组被删除，返回过滤后的 keys
+                                console.log('[初始化] 有分组被删除，返回过滤后的 keys');
+                                return validKeys;
+                            } else {
+                                // 没有变化，完全保持当前状态（已恢复的状态，包括收起的分组）
+                                console.log('[初始化] 保持已恢复的状态（包括收起的分组）');
+                                return currentKeys;
+                            }
                         } else {
-                            // 没有变化，完全保持当前状态（已恢复的状态，包括收起的分组）
-                            return currentKeys;
+                            // 所有保存的 keys 都不匹配（mock 数据重新生成了新的 groupKey）
+                            // 这种情况下，展开所有新分组（因为无法匹配之前的状态）
+                            // 这是正常的，因为 mock 数据的 groupKey 每次都会变化
+                            console.log('[初始化] ⚠️ 所有保存的 keys 都不匹配当前数据');
+                            console.log('[初始化] ⚠️ 这是因为 mock 数据重新生成了新的 groupKey');
+                            console.log('[初始化] ⚠️ 在实际环境中，groupKey 是固定的，不会出现此问题');
+                            console.log('[初始化] 展开所有新分组:', [...allGroupKeys]);
+                            return [...allGroupKeys];
                         }
                     } else {
                         // 没有保存的状态，默认展开所有分组
+                        console.log('[初始化] 没有保存的状态，默认展开所有分组');
                         return [...allGroupKeys];
                     }
                 });
@@ -488,7 +524,10 @@ function App() {
     // 当展开状态变化时，保存到本地存储
     useEffect(() => {
         if (isInitializedRef.current) {
+            console.log('[状态变化保存] expandedRowKeys 变化，保存到 localStorage:', expandedRowKeys);
             saveExpandedGroupKeys(expandedRowKeys);
+        } else {
+            console.log('[状态变化保存] 初始化中，跳过保存:', expandedRowKeys);
         }
     }, [expandedRowKeys]);
 
@@ -497,8 +536,11 @@ function App() {
         // 在 groupBy 模式下，onExpandedRowsChange 接收的 keys 是对象数组
         // 每个对象包含 groupKey 字段，表示分组的唯一标识符
         
+        console.log('[分组展开/收起] 接收到 keys:', keys);
+        
         // 使用函数式更新，确保基于最新的状态
         setExpandedRowKeys(prevKeys => {
+            console.log('[分组展开/收起] 当前展开的分组:', prevKeys);
             
             // 从 keys 对象数组中提取 groupKey（分组唯一标识符）
             // 注意：keys 数组中的对象可能是：
@@ -507,56 +549,77 @@ function App() {
             //    Semi Design 在分组展开时，可能会传递分组内的数据行对象
             //    我们需要从 groupKey 中提取（因为 groupBy: "groupKey"）
             const normalizedGroupKeys: string[] = keys.map((key, index) => {
+                console.log(`[分组展开/收起] 处理 key[${index}]:`, key, '类型:', typeof key);
+                
                 let extractedGroupKey: string = '';
                 
                 if (typeof key === 'object' && key !== null) {
+                    // 首先判断是否是数据行对象（有 appName 等数据字段）
+                    // 数据行对象不应该被当作分组 key，应该跳过或从它的 groupKey 字段提取其所属的分组
+                    const isDataRow = 'appName' in key && key.appName;
+                    
+                    if (isDataRow) {
+                        // 这是数据行对象，不应该作为分组 key
+                        // 但如果需要，可以从它的 groupKey 字段获取其所属分组
+                        // 注意：在 groupBy 模式下，Semi Design 通常不会传递数据行对象
+                        console.warn(`[分组展开/收起] key[${index}] 是数据行对象，跳过`);
+                        return '';
+                    }
+                    
                     // 情况1: 优先从 groupKey 字段提取（这是分组的唯一标识符，最可靠）
                     if ('groupKey' in key && key.groupKey !== undefined && key.groupKey !== null) {
                         const groupKey = key.groupKey;
                         if (typeof groupKey === 'string' && groupKey !== '[object Object]') {
                             extractedGroupKey = groupKey;
+                            console.log(`[分组展开/收起] 从 groupKey 字段提取:`, extractedGroupKey);
                         } else if (typeof groupKey === 'number') {
                             extractedGroupKey = String(groupKey);
+                            console.log(`[分组展开/收起] 从 groupKey 字段提取(数字):`, extractedGroupKey);
                         } else {
-                            // groupKey 类型异常，跳过
+                            console.warn(`[分组展开/收起] groupKey 类型异常:`, typeof groupKey, groupKey);
                         }
                     }
-                    // 情况2: 如果既没有 groupKey，但有 key 字段
-                    // 这可能是默认分组的标识（groupKey = '0'），或者是数据行的 key（不可靠）
-                    // 只有在确实没有 groupKey 时才使用 key
+                    // 情况2: 如果没有 groupKey，但有 key 字段
+                    // 在 groupBy 模式下，Semi Design 可能传递简单的分组标识对象 {key: 'groupKey'}
                     else if ('key' in key && key.key !== undefined && key.key !== null) {
-                        // 检查对象是否有其他属性，判断是否是数据行对象
-                        const hasOtherProps = Object.keys(key).length > 1;
-                        if (!hasOtherProps) {
-                            // 如果对象只有 key 属性，可能是分组标识对象（如 {key: '0'}）
+                        // 如果对象属性很少（<= 3个），可能是分组标识对象
+                        const isGroupObject = Object.keys(key).length <= 3 && !isDataRow;
+                        if (isGroupObject) {
                             extractedGroupKey = String(key.key);
+                            console.log(`[分组展开/收起] 从 key 字段提取(分组对象):`, extractedGroupKey);
                         } else {
-                            // 如果对象有多个属性，很可能是数据行对象，但没有 groupKey
-                            // 对于默认分组 '0'，key 可能是 '0'，这是可以接受的（groupKey = '0'）
-                            const keyValue = String(key.key);
-                            if (keyValue === '0') {
-                                extractedGroupKey = '0';
-                            } else {
-                                // 数据行对象没有 groupKey，跳过
-                                extractedGroupKey = '';
-                            }
+                            console.warn(`[分组展开/收起] 对象可能是数据行，跳过`);
                         }
-                    }
-                    
-                    if (!extractedGroupKey) {
-                        // 无法从对象提取 groupKey，跳过
+                    } else {
+                        console.warn(`[分组展开/收起] 对象没有 groupKey 或 key 字段:`, Object.keys(key));
                     }
                 } else {
                     // 如果是字符串或数字，直接作为 groupKey 使用
                     extractedGroupKey = String(key);
+                    console.log(`[分组展开/收起] 直接使用原始值:`, extractedGroupKey);
                 }
                 
                 // 统一处理 '0' 的情况并返回（默认分组）
-                return extractedGroupKey === '0' ? '0' : extractedGroupKey;
-            }).filter(groupKey => groupKey !== ''); // 过滤掉无效的 groupKey
+                const result = extractedGroupKey === '0' ? '0' : extractedGroupKey;
+                console.log(`[分组展开/收起] key[${index}] 提取结果:`, result);
+                return result;
+            }).filter(groupKey => {
+                const valid = groupKey !== '';
+                if (!valid) {
+                    console.warn(`[分组展开/收起] 过滤掉无效的 groupKey:`, groupKey);
+                }
+                return valid;
+            }); // 过滤掉无效的 groupKey
             
             // 去重并排序，确保数组一致性
             const uniqueGroupKeys = Array.from(new Set(normalizedGroupKeys)).sort();
+            
+            console.log('[分组展开/收起] 提取后的分组 keys:', uniqueGroupKeys);
+            console.log('[分组展开/收起] 更新后的展开状态:', uniqueGroupKeys);
+            
+            // 立即保存到 localStorage（用户操作时立即保存）
+            saveExpandedGroupKeys(uniqueGroupKeys);
+            console.log('[分组展开/收起] 已保存到 localStorage:', uniqueGroupKeys);
             
             return uniqueGroupKeys;
         });
@@ -570,7 +633,7 @@ function App() {
         // 注意：groupKey 为 '0' 的是默认分组，不统计在分组信息中
         const groupCountMap = new Map<string, { count: number; createTime: number }>();
         
-        dataSource.forEach(task => {
+                dataSource.forEach(task => {
             // 获取任务的 groupKey，如果没有则默认为 '0'
             const taskGroupKey = task.groupKey || '0';
             // 只统计有真实 groupKey 的任务（排除默认分组的 '0'）
@@ -582,7 +645,7 @@ function App() {
                     if (createTime < existing.createTime) {
                         existing.createTime = createTime;
                     }
-                } else {
+            } else {
                     groupCountMap.set(taskGroupKey, { count: 1, createTime });
                 }
             }
@@ -649,7 +712,7 @@ function App() {
             return createTimeA - createTimeB;
         });
     }, [dataSource, showGrouping, groupInfoMap]);
-    
+
     // 获取分组标签颜色（根据分组编号循环使用不同颜色）
     const getGroupTagColor = useCallback((groupNumber: number) => {
         const colors = [
@@ -772,13 +835,19 @@ function App() {
             });
         
         // 重新分配顺序：1, 2, 3, ...
+        // 只对待部署状态的任务分配部署顺序
+        // 非待部署状态的任务的部署顺序保持不变（已提交部署的任务顺序锁定）
         return tasks.map(item => {
             if (selectedPendingTasks.some(task => task.key === item.key)) {
+                // 选中的待部署任务，分配顺序
                 const index = selectedPendingTasks.findIndex(task => task.key === item.key);
                 return { ...item, deployOrder: index + 1 };
-            } else {
-                // 非选中任务或非待部署状态的任务清除部署顺序
+            } else if (item.taskStatus === DeploymentStatus.PENDING) {
+                // 未选中的待部署任务，清除部署顺序
                 return { ...item, deployOrder: undefined };
+            } else {
+                // 非待部署状态的任务，保持部署顺序不变（已提交部署的任务顺序锁定）
+                return item;
             }
         });
     }, []);
@@ -968,7 +1037,9 @@ function App() {
                 return orderA - orderB;
             },
             render: (text, record) => {
-                // 只有在选中状态且为待部署状态时才显示部署顺序输入框
+                // 如果任务有部署顺序
+                if (record.deployOrder !== undefined && record.deployOrder !== null) {
+                    // 只有在选中状态且为待部署状态时才显示可编辑的输入框
                 if (selectedRowKeys.includes(record.key) && record.taskStatus === DeploymentStatus.PENDING) {
                     return (
                         <Input
@@ -998,6 +1069,19 @@ function App() {
                         />
                     );
                 }
+                    // 有部署顺序但不是待部署状态或未被选中，显示只读数字（提交部署后锁定）
+                    return <span style={{ 
+                        color: record.taskStatus === DeploymentStatus.PENDING ? '#333' : '#666', 
+                        textAlign: 'center', 
+                        display: 'block',
+                        height: '28px',
+                        lineHeight: '28px',
+                        margin: 0,
+                        padding: 0,
+                        fontWeight: record.taskStatus !== DeploymentStatus.PENDING ? 500 : 400
+                    }}>{record.deployOrder}</span>;
+                }
+                // 没有部署顺序，显示 "-"
                 return <span style={{ 
                     color: '#999', 
                     textAlign: 'center', 
@@ -1065,14 +1149,25 @@ function App() {
             onChange: (newSelectedRowKeys: string[], selectedRows: DataItem[]) => {
                 setSelectedRowKeys(newSelectedRowKeys);
                 // 当选择任务时，按照勾选顺序分配唯一的部署顺序（只对待部署状态的任务）
-                    setData(prev => {
+                setData(prev => {
                     if (newSelectedRowKeys.length > 0) {
                         // 重新分配选中任务的顺序，确保顺序唯一且连续
+                        // reorderSelectedTasks 内部已经过滤，只处理待部署状态的任务
+                        // 已提交部署的任务的部署顺序保持不变（锁定）
                         return reorderSelectedTasks(prev, newSelectedRowKeys);
-                } else {
-                    // 没有选中任务时，清除所有部署顺序
-                        return prev.map(item => ({ ...item, deployOrder: undefined }));
-                }
+                    } else {
+                        // 没有选中任务时，只清除待部署状态任务的部署顺序
+                        // 已提交部署的任务的部署顺序保持不变（锁定）
+                        return prev.map(item => {
+                            // 只有待部署状态的任务才需要清除部署顺序
+                            // 已提交部署的任务的部署顺序保持锁定，不会被清除
+                            if (item.taskStatus === DeploymentStatus.PENDING) {
+                                return { ...item, deployOrder: undefined };
+                            }
+                            // 非待部署状态的任务保持原样（包括部署顺序）
+                            return item;
+                        });
+                    }
                 });
             },
             getCheckboxProps: (record: DataItem) => {
@@ -1080,8 +1175,18 @@ function App() {
                 // 在 Semi Design groupBy 模式下，分组行对象通常没有普通数据字段（如 appName）
                 // 数据行都有 appName 字段，分组行没有
                 const isGroupRow = !('appName' in record) || !record.appName;
+                // 允许选择的任务状态：
+                // 1. 待部署状态（用于批量部署、申请加白）
+                // 2. 部署完成状态（用于批量验证通过）
+                // 不允许选择的状态：审批中、部署中、回滚中（这些状态的任务正在进行中，不允许操作）
+                const isSelectable = record.taskStatus === DeploymentStatus.PENDING || 
+                                     record.taskStatus === DeploymentStatus.DEPLOYED;
+                // 明确禁用审批中、部署中、回滚中状态
+                const isProcessing = record.taskStatus === DeploymentStatus.APPROVING ||
+                                     record.taskStatus === DeploymentStatus.DEPLOYING ||
+                                     record.taskStatus === DeploymentStatus.ROLLING_BACK;
                 return {
-                    disabled: isGroupRow,
+                    disabled: isGroupRow || !isSelectable || isProcessing,
                 };
             },
         }),
@@ -1124,7 +1229,17 @@ function App() {
         secondary: isDarkMode ? 'var(--semi-color-text-2)' : '#8c8c8c'
     };
 
-    // 生成测试数据
+    // 生成测试数据（Mock数据，用于开发测试）
+    // 注意：生产环境应该从 API 获取数据，包括：
+    // 1. 部署任务数据（包含 groupKey、deployStatus 等所有字段）
+    // 2. 分组 key 由服务端返回，不应该在前端生成或存储到本地缓存
+    // 3. 只有分组展开/收起状态存储在浏览器缓存中（通过 EXPANDED_GROUP_KEYS_STORAGE_KEY）
+    // 
+    // Mock 数据说明：
+    // - 所有数据字段（包括 deployStatus、版本号、时间等）都是固定值
+    // - 每次刷新页面时，mock 数据完全相同，方便测试和调试
+    // - 所有任务默认无分组（groupKey 为 undefined，默认为 '0'，显示在默认分组中）
+    // - 用户可以通过选择任务并点击"批量部署"来创建新分组，完整体验分组创建流程
     const getData = (): DataItem[] => {
         const data: DataItem[] = [];
         const appNames = ['用户服务', '订单服务', '支付服务', '商品服务', '库存服务', '通知服务'];
@@ -1139,6 +1254,7 @@ function App() {
         const namespaces = ['default', 'production', 'staging', 'development'];
         const envTags = ['prod', 'test', 'dev', 'staging', 'gray'];
         const deployers = ['张三', '李四', '王五', '赵六', '钱七'];
+        // 添加不同状态的任务，包括部署中、审批中、回滚中状态用于测试
         const taskStatuses = [
             DeploymentStatus.PENDING,
             DeploymentStatus.PENDING,
@@ -1146,29 +1262,73 @@ function App() {
             DeploymentStatus.PENDING,
             DeploymentStatus.PENDING,
             DeploymentStatus.PENDING,
-            DeploymentStatus.PENDING
+            DeploymentStatus.PENDING,
+            DeploymentStatus.DEPLOYING,     // 部署中 - 不允许选择
+            DeploymentStatus.DEPLOYING,     // 部署中 - 不允许选择
+            DeploymentStatus.APPROVING,     // 审批中 - 不允许选择
+            DeploymentStatus.APPROVING,     // 审批中 - 不允许选择
+            DeploymentStatus.ROLLING_BACK,  // 回滚中 - 不允许选择
+            DeploymentStatus.ROLLING_BACK  // 回滚中 - 不允许选择
         ];
         
+        // Mock 数据默认无分组，方便用户完整体验从无分组到创建分组的流程
+        // 所有任务的 groupKey 都设为 undefined，会在"默认分组"中显示
+        // 用户可以通过选择任务并点击"批量部署"来创建新分组
+        
+        // 使用固定的基准时间戳（2024-01-01 00:00:00），确保每次生成的数据一致
+        const BASE_TIMESTAMP = new Date('2024-01-01T00:00:00').valueOf();
+        
         for (let i = 0; i < 46; i++) {
-            const randomNumber = (i * 1000) % 199;
+            // 使用基于索引的确定性计算，确保每次生成的数据完全相同
+            const offsetNumber = (i * 1000) % 199;
             const appIndex = i % appNames.length;
             const deployerIndex = i % deployers.length;
-            const taskStatusIndex = i % taskStatuses.length;
+            
+            // 明确指定某些任务的状态，用于测试不同状态的复选框禁用功能
+            // 默认使用待部署状态，特定索引使用其他状态
+            let taskStatus: DeploymentStatus;
+            if (i === 8) {
+                // 任务索引 8：部署中
+                taskStatus = DeploymentStatus.DEPLOYING;
+            } else if (i === 9) {
+                // 任务索引 9：部署中
+                taskStatus = DeploymentStatus.DEPLOYING;
+            } else if (i === 15) {
+                // 任务索引 15：审批中
+                taskStatus = DeploymentStatus.APPROVING;
+            } else if (i === 16) {
+                // 任务索引 16：审批中
+                taskStatus = DeploymentStatus.APPROVING;
+            } else if (i === 22) {
+                // 任务索引 22：回滚中
+                taskStatus = DeploymentStatus.ROLLING_BACK;
+            } else if (i === 23) {
+                // 任务索引 23：回滚中
+                taskStatus = DeploymentStatus.ROLLING_BACK;
+            } else {
+                // 其他任务：待部署状态
+                taskStatus = DeploymentStatus.PENDING;
+            }
+            
+            // Mock 数据默认无分组（groupKey 为 undefined，默认为 '0'，显示在默认分组中）
+            // 用户可以通过操作创建新分组
+            const taskGroupKey: string | undefined = undefined;
             
             data.push({
                 key: '' + i,
                 appName: `${appNames[appIndex]}${i > 5 ? `-${i}` : ''}`,
-                deployStatus: deployStatuses[i % deployStatuses.length],
-                podStatus: podStatuses[i % podStatuses.length],
-                version: `v1.${i % 10}.${randomNumber % 10}`,
-                cluster: clusters[i % clusters.length],
-                namespace: namespaces[i % namespaces.length],
-                envTag: envTags[i % envTags.length],
-                deployTime: new Date().valueOf() - randomNumber * DAY,
-                deployer: deployers[deployerIndex],
-                avatarBg: ['grey', 'red', 'blue', 'green', 'orange'][i % 5],
-                taskStatus: taskStatuses[taskStatusIndex],
+                deployStatus: deployStatuses[i % deployStatuses.length], // 固定模式
+                podStatus: podStatuses[i % podStatuses.length], // 固定模式
+                version: `v1.${i % 10}.${offsetNumber % 10}`, // 基于索引，固定值
+                cluster: clusters[i % clusters.length], // 固定模式
+                namespace: namespaces[i % namespaces.length], // 固定模式
+                envTag: envTags[i % envTags.length], // 固定模式
+                deployTime: BASE_TIMESTAMP + offsetNumber * DAY, // 使用固定基准时间 + 基于索引的偏移
+                deployer: deployers[deployerIndex], // 固定模式
+                avatarBg: ['grey', 'red', 'blue', 'green', 'orange'][i % 5], // 固定模式
+                taskStatus: taskStatus, // 明确指定的状态
                 deployOrder: undefined, // 初始时没有部署顺序
+                groupKey: taskGroupKey, // mock 分组 key（固定值，刷新时不变）
             });
         }
         
@@ -1187,79 +1347,61 @@ function App() {
         });
     };
 
-    // 本地存储Key
-    const TASKS_STORAGE_KEY = 'devops_tasks_data';
-    
-    // 从本地存储获取任务数据
+    // 从本地存储加载任务数据（操作后的真实数据）
     const loadStoredTasks = (): DataItem[] | null => {
         try {
-            const stored = localStorage.getItem(TASKS_STORAGE_KEY);
+            const stored = localStorage.getItem(TASKS_DATA_STORAGE_KEY);
             if (stored) {
                 const parsed = JSON.parse(stored);
-                // 如果解析的数据是数组且长度大于0，才返回
                 if (Array.isArray(parsed) && parsed.length > 0) {
+                    console.log('[数据加载] 从 localStorage 恢复操作后的任务数据:', parsed.length, '条');
                     return parsed;
                 }
             }
         } catch (error) {
-            // 读取本地存储失败，使用默认数据
+            console.error('[数据加载] 读取 localStorage 失败:', error);
         }
         return null;
     };
     
-    // 保存任务数据到本地存储
+    // 保存任务数据到本地存储（操作后的真实数据）
     const saveTasks = (tasks: DataItem[]): void => {
         try {
-            localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+            localStorage.setItem(TASKS_DATA_STORAGE_KEY, JSON.stringify(tasks));
+            console.log('[数据保存] 已保存操作后的任务数据到 localStorage:', tasks.length, '条');
         } catch (error) {
-            // 保存到本地存储失败，忽略错误
+            console.error('[数据保存] 保存到 localStorage 失败:', error);
         }
     };
 
-    // 初始化数据加载：优先从本地存储恢复，否则生成新数据
+    // 初始化数据加载：
+    // 1. 优先从 localStorage 加载操作后的真实数据（如果有）
+    // 2. 如果没有，则使用 mock 数据作为初始数据
+    // 注意：这样既能模拟真实场景（操作后的数据会保存），又能方便调试（初始数据固定）
     useEffect(() => {
-        const loadInitialData = () => {
-            try {
                 const storedTasks = loadStoredTasks();
-                let data: DataItem[];
-                
-                if (storedTasks && Array.isArray(storedTasks) && storedTasks.length > 0) {
-                    data = storedTasks;
+        if (storedTasks && storedTasks.length > 0) {
+            // 有操作后的数据，使用真实数据
+            console.log('[数据加载] 使用操作后的真实数据');
+            setData(storedTasks);
                 } else {
-                    data = getData();
-                    // 保存新生成的数据
-                    saveTasks(data);
-                }
-                
-                if (data && Array.isArray(data) && data.length > 0) {
-            setData(data);
-                } else {
-                    // 如果数据为空，强制生成新数据
-                    const newData = getData();
-                    saveTasks(newData);
-                    setData(newData);
-                }
-        } catch (error) {
-            // 数据加载失败，使用默认数据
-                // 出错时强制生成新数据
-                const data = getData();
-                saveTasks(data);
-                setData(data);
+            // 没有操作后的数据，使用 mock 数据
+            console.log('[数据加载] 使用 mock 初始数据');
+            const mockData = getData();
+            setData(mockData);
         }
-        };
-        
-        // 立即执行
-        loadInitialData();
     }, []);
     
-    // 监听 dataSource 变化，自动保存到本地存储（跳过首次空数组）
-    const isFirstRender = useRef(true);
+    // 监听任务数据变化，保存操作后的真实数据（包括部署顺序）
+    // 注意：任务状态从待部署变为其他状态时，部署顺序会在 useDeploymentStatus Hook 中自动清除
+    const isFirstDataLoad = useRef(true);
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
+        if (isFirstDataLoad.current) {
+            isFirstDataLoad.current = false;
             return;
         }
         if (dataSource && dataSource.length > 0) {
+            // 保存操作后的真实数据（包括部署顺序）
             saveTasks(dataSource);
         }
     }, [dataSource]);
@@ -1408,40 +1550,59 @@ function App() {
                     </h1>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {selectedRowKeys.length > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Button
-                                type="primary"
-                                onClick={() => handleBatchAction('deploy')}
-                            >
-                                批量部署
-                            </Button>
-                            <Dropdown
-                                trigger="click"
-                                visible={batchDropdownVisible}
-                                onVisibleChange={setBatchDropdownVisible}
-                                content={
-                                    <Dropdown.Menu>
-                                        {[
-                                            { key: 'whitelist', text: '申请加白' },
-                                            { key: 'verify_pass', text: '验证通过' },
-                                            { key: 'rollback', text: '批量回滚' },
-                                            { key: 'ops_intervention', text: '运维介入' }
-                                        ].map(item => (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {/* 批量部署按钮：默认禁用，只有选中符合条件的待部署任务时才启用 */}
+                        <Button
+                            type="primary"
+                            disabled={!canPerformBatchOperation(dataSource, OperationType.DEPLOY)}
+                            onClick={() => handleBatchAction('deploy')}
+                        >
+                            批量部署
+                        </Button>
+                        {/* 批量操作下拉菜单：默认禁用，只有选中符合条件的任务时才启用 */}
+                        <Dropdown
+                            trigger="click"
+                            visible={batchDropdownVisible}
+                            onVisibleChange={setBatchDropdownVisible}
+                            content={
+                                <Dropdown.Menu>
+                                    {[
+                                        { key: 'whitelist', text: '申请加白', operation: OperationType.WHITELIST },
+                                        { key: 'verify_pass', text: '验证通过', operation: OperationType.VERIFY_PASS }
+                                    ].map(item => {
+                                        const isEnabled = canPerformBatchOperation(dataSource, item.operation);
+                                        return (
                                             <Dropdown.Item 
                                                 key={item.key}
-                                                onClick={() => handleBatchAction(item.key)}
+                                                onClick={() => {
+                                                    if (isEnabled) {
+                                                        handleBatchAction(item.key);
+                                                    }
+                                                }}
+                                                style={{
+                                                    opacity: isEnabled ? 1 : 0.5,
+                                                    cursor: isEnabled ? 'pointer' : 'not-allowed',
+                                                    pointerEvents: isEnabled ? 'auto' : 'none'
+                                                }}
                                             >
                                                 {item.text}
                                             </Dropdown.Item>
-                                        ))}
-                                    </Dropdown.Menu>
+                                        );
+                                    })}
+                                </Dropdown.Menu>
+                            }
+                        >
+                            <Button 
+                                type="primary"
+                                disabled={
+                                    !canPerformBatchOperation(dataSource, OperationType.WHITELIST) &&
+                                    !canPerformBatchOperation(dataSource, OperationType.VERIFY_PASS)
                                 }
                             >
-                                <Button type="primary">
-                                    ···
-                                </Button>
-                            </Dropdown>
+                                ···
+                            </Button>
+                        </Dropdown>
+                        {selectedRowKeys.length > 0 && (
                             <span style={{ 
                                 fontSize: '12px', 
                                 color: '#666',
@@ -1449,8 +1610,8 @@ function App() {
                             }}>
                                 已选择 {selectedRowKeys.length} 个任务
                             </span>
-                        </div>
-                    )}
+                        )}
+                    </div>
                     <Button
                         type="primary" 
                         icon={<IconPlus />} 
