@@ -823,6 +823,7 @@ function App() {
               title: '部署状态',
             dataIndex: 'taskStatus',
             width: 120,
+            fixed: 'left' as const,
             sorter: (a, b) => {
                 // 先比较分组顺序，如果分组不同，返回分组顺序（固定分组顺序）
                 const groupOrder = compareGroupOrder(a, b);
