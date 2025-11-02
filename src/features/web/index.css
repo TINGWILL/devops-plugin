@@ -286,23 +286,126 @@ body[theme-mode="dark"] .semi-table-container .semi-table .semi-table-tbody tr.s
   font-size: 14px;
   line-height: 20px;
   overflow: visible;
+  /* 禁止文本溢出显示省略号 */
+  text-overflow: clip !important;
+  white-space: nowrap !important;
 }
 
-/* 只隐藏表头的下拉按钮（3个点），保留复选框 */
-.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column .semi-dropdown,
-.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column button:not(.semi-checkbox):not([type="checkbox"]):not(.semi-checkbox-wrapper),
-.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column .semi-button:not(.semi-checkbox):not([type="checkbox"]),
-.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column [class*="more"]:not(.semi-checkbox),
-.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column [class*="ellipsis"],
-.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap .semi-dropdown,
-.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap button:not(.semi-checkbox):not([type="checkbox"]):not(.semi-checkbox-wrapper),
-.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap [class*="more"]:not(.semi-checkbox),
-.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap [class*="ellipsis"]:not(.semi-checkbox) {
+/* 隐藏表头选择列的所有伪元素（::before 和 ::after）*/
+/* 关键：必须隐藏 th.semi-table-column-selection 的 ::before 伪元素（这是3个点的来源）*/
+/* 使用最高优先级的选择器 */
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column::before,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column::after,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap::before,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap::after,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-column-selection::before,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-column-selection::after,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-row-head.semi-table-column-selection::before,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-row-head.semi-table-column-selection::after,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-cell-fixed-left.semi-table-column-selection::before,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-cell-fixed-left.semi-table-column-selection::after,
+.semi-table-container .semi-table .semi-table-thead th.hide-pseudo-elements::before,
+.semi-table-container .semi-table .semi-table-thead th.hide-pseudo-elements::after,
+.semi-table .semi-table-thead .semi-table-selection-column::before,
+.semi-table .semi-table-thead .semi-table-selection-column::after,
+.semi-table .semi-table-thead .semi-table-selection-wrap::before,
+.semi-table .semi-table-thead .semi-table-selection-wrap::after,
+.semi-table .semi-table-thead th.semi-table-column-selection::before,
+.semi-table .semi-table-thead th.semi-table-column-selection::after,
+.semi-table .semi-table-thead th.semi-table-row-head.semi-table-column-selection::before,
+.semi-table .semi-table-thead th.semi-table-row-head.semi-table-column-selection::after,
+.semi-table .semi-table-thead th.semi-table-cell-fixed-left.semi-table-column-selection::before,
+.semi-table .semi-table-thead th.semi-table-cell-fixed-left.semi-table-column-selection::after {
+  content: none !important;
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   width: 0 !important;
   height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+  pointer-events: none !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  background: none !important;
+  border: none !important;
+  text-indent: -9999px !important;
+}
+
+/* 隐藏选择列内所有子元素的伪元素（包括深层嵌套） */
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column *::before,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column *::after,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap *::before,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap *::after,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-column-selection *::before,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-column-selection *::after,
+/* 特别针对复选框相关元素 */
+.semi-table-container .semi-table .semi-table-thead th.semi-table-column-selection .semi-checkbox::before,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-column-selection .semi-checkbox::after,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-column-selection .semi-checkbox-inner::before,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-column-selection .semi-checkbox-inner::after,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-column-selection .semi-checkbox-inner-display::before,
+.semi-table-container .semi-table .semi-table-thead th.semi-table-column-selection .semi-checkbox-inner-display::after,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap .semi-checkbox::before,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap .semi-checkbox::after,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap .semi-checkbox-inner::before,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap .semi-checkbox-inner::after,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap .semi-checkbox-inner-display::before,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap .semi-checkbox-inner-display::after {
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+  pointer-events: none !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  background: none !important;
+  border: none !important;
+}
+
+/* 只隐藏表头的下拉按钮（3个点），保留复选框 */
+/* 使用更全面的选择器覆盖所有可能的省略号元素 */
+/* 激进方案：隐藏第一个th内的所有非复选框按钮和下拉菜单 */
+.semi-table-container .semi-table .semi-table-thead tr th:first-child .semi-dropdown,
+.semi-table-container .semi-table .semi-table-thead tr th:first-child .semi-dropdown-trigger,
+.semi-table-container .semi-table .semi-table-thead tr th:first-child button:not(.semi-checkbox):not(.semi-checkbox-wrapper):not(input[type="checkbox"]),
+.semi-table-container .semi-table .semi-table-thead tr th:first-child .semi-button:not(.semi-checkbox),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column .semi-dropdown,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column button:not(.semi-checkbox):not([type="checkbox"]):not(.semi-checkbox-wrapper),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column .semi-button:not(.semi-checkbox):not([type="checkbox"]),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column [class*="more"]:not(.semi-checkbox),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column [class*="ellipsis"],
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column [class*="dropdown"],
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column [class*="icon"]:not(.semi-checkbox),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column svg:not(.semi-checkbox svg),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap .semi-dropdown,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap button:not(.semi-checkbox):not([type="checkbox"]):not(.semi-checkbox-wrapper),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap [class*="more"]:not(.semi-checkbox),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap [class*="ellipsis"]:not(.semi-checkbox),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap [class*="dropdown"]:not(.semi-checkbox),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap [class*="icon"]:not(.semi-checkbox),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap svg:not(.semi-checkbox svg),
+/* 通用的表头选择列中所有非复选框元素 */
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column > *:not(.semi-checkbox):not(.semi-checkbox-wrapper):not(input[type="checkbox"]),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap > *:not(.semi-checkbox):not(.semi-checkbox-wrapper):not(input[type="checkbox"]) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+  pointer-events: none !important;
 }
 
 /* 确保复选框可见且可点击 */
@@ -319,6 +422,7 @@ body[theme-mode="dark"] .semi-table-container .semi-table .semi-table-tbody tr.s
   cursor: pointer !important;
 }
 
+
 /* 确保表头 selection-wrap 本身可见 */
 .semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap,
 .semi-table .semi-table-thead .semi-table-selection-wrap {
@@ -329,6 +433,37 @@ body[theme-mode="dark"] .semi-table-container .semi-table .semi-table-tbody tr.s
   opacity: 1;
   width: 100%;
   height: 100%;
+  /* 确保内部只显示复选框，隐藏其他所有内容 */
+  overflow: hidden;
+  position: relative;
+}
+
+/* 限制第一个th的宽度，防止超出内容显示 */
+.semi-table-container .semi-table .semi-table-thead tr th:first-child {
+  overflow: hidden !important;
+  max-width: 50px !important;
+  min-width: 50px !important;
+  width: 50px !important;
+}
+
+/* 确保第一个th内的所有内容都在可见范围内 */
+.semi-table-container .semi-table .semi-table-thead tr th:first-child .semi-table-selection-wrap {
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* 确保复选框及其内部元素正常显示 */
+.semi-table-container .semi-table .semi-table-thead tr th:first-child .semi-checkbox,
+.semi-table-container .semi-table .semi-table-thead tr th:first-child .semi-checkbox-wrapper,
+.semi-table-container .semi-table .semi-table-thead tr th:first-child input[type="checkbox"],
+.semi-table-container .semi-table .semi-table-thead tr th:first-child .semi-checkbox-inner,
+.semi-table-container .semi-table .semi-table-thead tr th:first-child .semi-checkbox-input,
+.semi-table-container .semi-table .semi-table-thead tr th:first-child .semi-checkbox-inner-display {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* 标签样式 */

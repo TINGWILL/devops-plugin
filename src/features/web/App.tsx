@@ -185,35 +185,9 @@ function App() {
     // 飞书项目系统主题跟随
     const isDarkMode = useFeishuTheme();
 
-    // 获取当前登录用户信息
-    const { user, loading: userLoading, error: userError, context } = useFeishuUser();
-
-    // 打印用户信息到控制台（用于测试验证）
-    useEffect(() => {
-        if (userLoading) {
-            console.log('[飞书用户信息] 正在加载...');
-        } else if (userError) {
-            console.error('[飞书用户信息] 获取失败:', userError);
-        } else if (user) {
-            console.log('[飞书用户信息] 当前登录用户:', user);
-            console.log('[飞书用户信息] 详细信息:', {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                avatar: user.avatar,
-                unionId: user.unionId,
-                openId: user.openId,
-            });
-        } else {
-            console.warn('[飞书用户信息] 未获取到用户信息');
-        }
-
-        // 打印完整的 Context 对象（用于调试）
-        if (context) {
-            console.log('[飞书 Context] 完整上下文:', context);
-            console.log('[飞书 Context] 可用字段:', Object.keys(context));
-        }
-    }, [user, userLoading, userError, context]);
+    // 获取当前登录用户信息（用于后续API调用）
+    // @ts-ignore - user 变量保留用于后续 API 调用
+    const { user: _user } = useFeishuUser();
 
     // 配置 Toast 容器（仅在组件挂载时配置一次）
     // 注意：Toast 需要渲染到 document.body 才能在所有层级显示
@@ -224,6 +198,100 @@ function App() {
             });
         }
     }, []);
+
+    // 隐藏表头复选框旁边的3个点：通过创建遮挡层覆盖
+    useEffect(() => {
+        const createOverlay = () => {
+            if (typeof document === 'undefined') return;
+            
+            const firstTh = document.querySelector('.semi-table-thead tr th:first-child');
+            if (!firstTh) return;
+            
+            // 移除旧的遮挡层
+            const existingOverlay = document.getElementById('checkbox-overlay-mask');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // 获取表头的实际背景色
+            const thStyles = window.getComputedStyle(firstTh as Element);
+            let bgColor = thStyles.backgroundColor;
+            
+            // 如果背景色无效，根据主题使用默认颜色
+            if (!bgColor || bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') {
+                const isDark = document.body.getAttribute('theme-mode') === 'dark' ||
+                             document.documentElement.classList.contains('dark');
+                bgColor = isDark ? '#2a2a2a' : '#F5F7FA';
+            }
+            
+            // 找到复选框wrap的位置
+            const checkboxWrap = firstTh.querySelector('.semi-table-selection-wrap');
+            if (!checkboxWrap) return;
+            
+            const wrapRect = checkboxWrap.getBoundingClientRect();
+            const overlayWidth = 15;
+            
+            // 创建遮挡层
+            const overlay = document.createElement('div');
+            overlay.id = 'checkbox-overlay-mask';
+            overlay.style.cssText = `
+                position: fixed;
+                left: ${Math.round(wrapRect.right)}px;
+                top: ${Math.round(wrapRect.top)}px;
+                width: ${overlayWidth}px;
+                height: ${Math.round(wrapRect.height)}px;
+                background-color: ${bgColor};
+                z-index: 100000;
+                pointer-events: none;
+            `;
+            
+            document.body.appendChild(overlay);
+        };
+
+        // 防抖函数
+        let overlayTimer: ReturnType<typeof setTimeout> | null = null;
+        const debouncedCreateOverlay = () => {
+            if (overlayTimer) clearTimeout(overlayTimer);
+            overlayTimer = setTimeout(createOverlay, 100);
+        };
+
+        // 立即执行一次
+        createOverlay();
+
+        // 监听DOM变化和窗口事件
+        let observer: MutationObserver | null = null;
+        const tableContainer = document.querySelector('.semi-table-container');
+        if (tableContainer) {
+            observer = new MutationObserver(debouncedCreateOverlay);
+            observer.observe(tableContainer, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class', 'style'],
+            });
+        }
+
+        const handleResize = debouncedCreateOverlay;
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('scroll', handleResize, true);
+
+        // 延迟执行确保渲染完成
+        const timers = [
+            setTimeout(createOverlay, 500),
+            setTimeout(createOverlay, 1000),
+        ];
+
+        return () => {
+            if (observer) observer.disconnect();
+            if (overlayTimer) clearTimeout(overlayTimer);
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('scroll', handleResize, true);
+            timers.forEach(timer => clearTimeout(timer));
+            const overlay = document.getElementById('checkbox-overlay-mask');
+            if (overlay) overlay.remove();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dataSource]); // 依赖数据源变化，但主要通过 DOM 监听和窗口事件来更新遮挡层
 
     // 使用分组管理 Hook
     const {
@@ -409,7 +477,7 @@ function App() {
                     return task;
                 });
                 setData(tasksWithErrors);
-            } else {
+                } else {
                 setData(generateMockTasks());
             }
         }
@@ -655,7 +723,7 @@ function App() {
         onConfirm={confirmDelete}
         onCancel={closeDeleteConfirm}
       />
-                </div>
+          </div>
     </ErrorBoundary>
   );
 }
