@@ -232,6 +232,8 @@ function App() {
             const overlayWidth = 15;
             
             // 创建遮挡层
+            // z-index 设置为 999，确保在 Modal 遮罩层（1000-1050）下方
+            // 这样遮挡层会被遮罩层的背景色覆盖，达到颜色一致的效果
             const overlay = document.createElement('div');
             overlay.id = 'checkbox-overlay-mask';
             overlay.style.cssText = `
@@ -241,7 +243,7 @@ function App() {
                 width: ${overlayWidth}px;
                 height: ${Math.round(wrapRect.height)}px;
                 background-color: ${bgColor};
-                z-index: 100000;
+                z-index: 999;
                 pointer-events: none;
             `;
             
