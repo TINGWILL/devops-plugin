@@ -9,6 +9,7 @@ import { DeploymentStatus, OperationType } from '../../constants/deploymentStatu
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { loadFromStorage } from '../../utils/storageUtils';
 import { useFeishuTheme } from '../../hooks/useFeishuTheme';
+import { useFeishuUser } from '../../hooks/useFeishuUser';
 import { generateMockTasks } from '../../utils/mockData';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { useLoadingState } from '../../hooks/useLoadingState';
@@ -183,6 +184,36 @@ function App() {
     
     // 飞书项目系统主题跟随
     const isDarkMode = useFeishuTheme();
+
+    // 获取当前登录用户信息
+    const { user, loading: userLoading, error: userError, context } = useFeishuUser();
+
+    // 打印用户信息到控制台（用于测试验证）
+    useEffect(() => {
+        if (userLoading) {
+            console.log('[飞书用户信息] 正在加载...');
+        } else if (userError) {
+            console.error('[飞书用户信息] 获取失败:', userError);
+        } else if (user) {
+            console.log('[飞书用户信息] 当前登录用户:', user);
+            console.log('[飞书用户信息] 详细信息:', {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar,
+                unionId: user.unionId,
+                openId: user.openId,
+            });
+        } else {
+            console.warn('[飞书用户信息] 未获取到用户信息');
+        }
+
+        // 打印完整的 Context 对象（用于调试）
+        if (context) {
+            console.log('[飞书 Context] 完整上下文:', context);
+            console.log('[飞书 Context] 可用字段:', Object.keys(context));
+        }
+    }, [user, userLoading, userError, context]);
 
     // 配置 Toast 容器（仅在组件挂载时配置一次）
     // 注意：Toast 需要渲染到 document.body 才能在所有层级显示

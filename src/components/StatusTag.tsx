@@ -204,12 +204,12 @@ export const StatusTag: React.FC<StatusTagProps> = ({
   
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-      <Tag 
+    <Tag 
         color={config.color as any} 
-        className={`semi-tag-${config.color} ${className || ''}`}
-      >
-        {status}
-      </Tag>
+      className={`semi-tag-${config.color} ${className || ''}`}
+    >
+      {status}
+    </Tag>
       {isFailed && errorMessage && (
         <Popover
           visible={visible}
