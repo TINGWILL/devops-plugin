@@ -1,15 +1,23 @@
+/* 确保页面可以滚动 */
+html, body {
+  height: auto;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
 /* 基础容器样式 */
 #app {
-  height: 100vh;
+  min-height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
-  padding: 0 24px;
+  padding: 0 24px 24px 24px;
   color: var(--semi-color-text-0);
   background-color: var(--semi-color-bg-0);
-  overflow: auto;
+  overflow: visible;
+  box-sizing: border-box;
 }
 
 /* 滚动条样式 */
@@ -59,16 +67,86 @@ body[theme-mode="dark"] ::-webkit-scrollbar-thumb:hover {
   #app { padding: 0 12px; }
 }
 
-/* 固定列样式 */
+/* 固定列样式 - 参考官方示例的简洁实现 */
 .semi-table-fixed-left {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   z-index: 10;
+  position: sticky !important;
 }
 
 .semi-table-fixed-right {
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
   z-index: 10;
+  position: sticky !important;
+  right: 0 !important;
 }
+
+/* 关键修复：滚动到最右边时的对齐问题 - 考虑滚动条宽度 */
+/* Semi Design表格在滚动时，表头没有滚动条，表体有滚动条，导致宽度计算不一致 */
+/* 解决方案：当表体有垂直滚动条时，表头的可用宽度需要减去滚动条宽度 */
+
+/* 表头容器：完全展开，使用页面滚动 */
+.semi-table-header-wrapper {
+  overflow: visible;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 表体容器：自适应高度，使用页面滚动条 */
+.semi-table-body-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  width: 100%;
+  box-sizing: border-box;
+  max-height: none;
+}
+
+/* 关键修复：当表体有垂直滚动条时，表头需要减去滚动条宽度 */
+/* 使用CSS变量或JavaScript可以更精确，但先用固定值（滚动条宽度通常是15-17px） */
+.semi-table-scroll-wrapper {
+  position: relative;
+}
+
+/* 确保表头和表体的表格宽度一致 */
+.semi-table-header-wrapper .semi-table,
+.semi-table-body-wrapper .semi-table {
+  table-layout: fixed !important;
+  width: 100%;
+}
+
+/* 关键修复：确保固定右列在滚动时对齐 - 专门针对最后一列 */
+.semi-table-header-wrapper .semi-table .semi-table-thead tr th.semi-table-fixed-right,
+.semi-table-body-wrapper .semi-table .semi-table-tbody tr td.semi-table-fixed-right,
+.semi-table-container .semi-table .semi-table-thead tr th.semi-table-fixed-right,
+.semi-table-container .semi-table .semi-table-tbody tr td.semi-table-fixed-right {
+  position: sticky !important;
+  right: 0 !important;
+  box-sizing: border-box !important;
+  /* 关键：确保宽度完全一致 */
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+  /* 确保padding完全一致 */
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+
+/* 关键修复：使用更精确的方法对齐固定右列 */
+/* 方案：表头的固定右列right值应该等于表体的固定右列right值加上滚动条宽度 */
+.semi-table-header-wrapper .semi-table .semi-table-thead tr th.semi-table-fixed-right {
+  /* 如果表体有滚动条，这里right值需要是负的滚动条宽度，但Semi Design应该会自动处理 */
+  /* 如果仍有问题，可能需要JavaScript动态调整 */
+  right: 0 !important;
+}
+
+.semi-table-body-wrapper .semi-table .semi-table-tbody tr td.semi-table-fixed-right {
+  /* 表体的固定右列需要考虑滚动条，但Semi Design应该会自动处理 */
+  right: 0 !important;
+}
+
 
 .semi-table-selection-column {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
@@ -79,20 +157,11 @@ body[theme-mode="dark"] ::-webkit-scrollbar-thumb:hover {
   width: 50px;
 }
 
-.semi-table-fixed-left,
-.semi-table-fixed-right {
-  position: sticky !important;
-}
-
 .semi-table-fixed-left {
   left: 50px;
 }
 
-.semi-table-fixed-right {
-  right: 0;
-}
-
-/* 表格容器和样式 */
+/* 表格容器和样式 - 参考官方示例，简化样式 */
 .semi-table-container {
   background: var(--semi-color-bg-0);
   border-radius: 6px;
@@ -100,49 +169,166 @@ body[theme-mode="dark"] ::-webkit-scrollbar-thumb:hover {
 }
 
 .semi-table-container .semi-table {
-  border-collapse: separate !important;
-  border-spacing: 0 !important;
-  border: 1px solid var(--semi-color-border);
-  border-radius: 6px;
-  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  /* 关键修复：使用固定表格布局确保列宽一致 */
+  table-layout: fixed !important;
 }
 
-/* 表格内框线样式 */
-.semi-table-container .semi-table .semi-table-thead > tr > th,
+/* 关键修复：确保表头和表体的列宽完全同步 */
 .semi-table-container .semi-table .semi-table-thead tr th,
-.semi-table-container .semi-table .semi-table-thead .semi-table-cell {
-  background-color: var(--semi-color-bg-1) !important;
-  border-right: 1px solid var(--semi-color-border) !important;
-  border-bottom: 1px solid var(--semi-color-border) !important;
-  padding: 12px 16px !important;
+.semi-table-container .semi-table .semi-table-tbody tr td {
+  box-sizing: border-box !important;
 }
 
-.semi-table-container .semi-table .semi-table-tbody > tr > td,
+/* 确保表头和表体在滚动容器中宽度一致 */
+.semi-table-header-wrapper .semi-table,
+.semi-table-body-wrapper .semi-table {
+  table-layout: fixed !important;
+}
+
+/* 确保所有单元格宽度计算方式一致 */
+.semi-table-header-wrapper .semi-table .semi-table-thead tr th,
+.semi-table-body-wrapper .semi-table .semi-table-tbody tr td {
+  box-sizing: border-box !important;
+  width: auto !important;
+}
+
+/* 表头样式 - 参考官方示例的简洁实现 */
+.semi-table-container .semi-table .semi-table-thead tr th,
+.semi-table .semi-table-thead tr th,
+.semi-table-header-wrapper .semi-table .semi-table-thead tr th {
+  background-color: #F5F7FA;
+  border-right: 1px solid #E5E6EB;
+  border-bottom: 1px solid #E5E6EB;
+  border-left: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: #262626;
+  box-sizing: border-box !important;
+  vertical-align: middle;
+  /* 确保宽度精确 */
+  width: auto;
+}
+
+/* 关键修复：表头固定右列的特殊处理 */
+.semi-table-container .semi-table .semi-table-thead tr th.semi-table-fixed-right,
+.semi-table-header-wrapper .semi-table .semi-table-thead tr th.semi-table-fixed-right {
+  /* 确保宽度和padding与表体完全一致 */
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+/* 表体样式 - 参考官方示例的简洁实现 */
 .semi-table-container .semi-table .semi-table-tbody tr td,
-.semi-table-container .semi-table .semi-table-tbody .semi-table-cell {
-  background-color: var(--semi-color-bg-0) !important;
-  border-right: 1px solid var(--semi-color-border) !important;
-  border-bottom: 1px solid var(--semi-color-border) !important;
-  padding: 12px 16px !important;
+.semi-table .semi-table-tbody tr td,
+.semi-table-body-wrapper .semi-table .semi-table-tbody tr td {
+  background-color: #FFFFFF;
+  border-right: 1px solid #E5E6EB;
+  border-bottom: 1px solid #E5E6EB;
+  border-left: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: #262626;
+  box-sizing: border-box !important;
+  vertical-align: middle;
+  /* 确保宽度精确 */
+  width: auto;
 }
 
-/* 边框处理 */
-.semi-table-container .semi-table .semi-table-thead tr th:last-child,
-.semi-table-container .semi-table .semi-table-tbody tr td:last-child {
-  border-right: none !important;
+/* 关键修复：表体固定右列的特殊处理 */
+.semi-table-container .semi-table .semi-table-tbody tr td.semi-table-fixed-right,
+.semi-table-body-wrapper .semi-table .semi-table-tbody tr td.semi-table-fixed-right {
+  /* 确保宽度和padding与表头完全一致 */
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
 }
 
-.semi-table-container .semi-table .semi-table-tbody tr:last-child td {
-  border-bottom: none !important;
+/* 暗色模式表格样式 */
+body[theme-mode="dark"] .semi-table-container .semi-table .semi-table-thead tr th {
+  background-color: #2a2a2a;
+  color: #ffffff;
+  border-color: #4a4a4a;
 }
 
-/* 表格交互效果 */
-.semi-table-container .semi-table .semi-table-tbody tr:hover td {
-  background-color: var(--semi-color-fill-0) !important;
+body[theme-mode="dark"] .semi-table-container .semi-table .semi-table-tbody tr td {
+  background-color: #2a2a2a;
+  color: #ffffff;
+  border-color: #4a4a4a;
 }
 
-.semi-table-container .semi-table .semi-table-tbody tr.semi-table-row-selected td {
-  background-color: var(--semi-color-primary-light-hover) !important;
+body[theme-mode="dark"] .semi-table-container .semi-table .semi-table-tbody tr:hover td {
+  background-color: #3a3a3a;
+}
+
+body[theme-mode="dark"] .semi-table-container .semi-table .semi-table-tbody tr.semi-table-row-selected td {
+  background-color: #1a3a5a;
+}
+
+/* 表头选择列 - 隐藏3个点，保留复选框 */
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column,
+.semi-table .semi-table-thead .semi-table-selection-column {
+  padding: 10px 16px;
+  font-size: 14px;
+  line-height: 20px;
+  overflow: visible;
+}
+
+/* 只隐藏表头的下拉按钮（3个点），保留复选框 */
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column .semi-dropdown,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column button:not(.semi-checkbox):not([type="checkbox"]):not(.semi-checkbox-wrapper),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column .semi-button:not(.semi-checkbox):not([type="checkbox"]),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column [class*="more"]:not(.semi-checkbox),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column [class*="ellipsis"],
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap .semi-dropdown,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap button:not(.semi-checkbox):not([type="checkbox"]):not(.semi-checkbox-wrapper),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap [class*="more"]:not(.semi-checkbox),
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap [class*="ellipsis"]:not(.semi-checkbox) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 确保复选框可见且可点击 */
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column .semi-checkbox,
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column input[type="checkbox"],
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-column .semi-checkbox-wrapper,
+.semi-table-container .semi-table .semi-table-tbody .semi-table-selection-column .semi-checkbox,
+.semi-table-container .semi-table .semi-table-tbody .semi-table-selection-column input[type="checkbox"],
+.semi-table-container .semi-table .semi-table-tbody .semi-table-selection-column .semi-checkbox-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* 确保表头 selection-wrap 本身可见 */
+.semi-table-container .semi-table .semi-table-thead .semi-table-selection-wrap,
+.semi-table .semi-table-thead .semi-table-selection-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  visibility: visible;
+  opacity: 1;
+  width: 100%;
+  height: 100%;
 }
 
 /* 标签样式 */
@@ -154,24 +340,49 @@ body[theme-mode="dark"] ::-webkit-scrollbar-thumb:hover {
 }
 .semi-tag.semi-tag-grey {
   background-color: var(--semi-color-fill-0);
-  color: var(--semi-color-text-2);
-  border: 1px solid var(--semi-color-border);
+  color: var(--semi-color-text-0);
 }
-
 .semi-tag.semi-tag-blue {
-  background-color: var(--semi-color-primary-light-default);
-  color: var(--semi-color-primary);
-  border: 1px solid var(--semi-color-primary-light-hover);
+  background-color: #E6F4FF;
+  color: #1890FF;
 }
 
-.semi-tag.semi-tag-green {
-  background-color: var(--semi-color-success-light-default);
-  color: var(--semi-color-success);
-  border: 1px solid var(--semi-color-success-light-hover);
+/* 状态标签样式 */
+.status-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
 }
 
-.semi-tag.semi-tag-red {
-  background-color: var(--semi-color-danger-light-default);
-  color: var(--semi-color-danger);
-  border: 1px solid var(--semi-color-danger-light-hover);
+.status-tag.pending {
+  background-color: #FFF7E6;
+  color: #FA8C16;
+}
+
+.status-tag.deploying {
+  background-color: #E6F4FF;
+  color: #1890FF;
+}
+
+.status-tag.deployed {
+  background-color: #F6FFED;
+  color: #52C41A;
+}
+
+.status-tag.failed {
+  background-color: #FFF1F0;
+  color: #F5222D;
+}
+
+.status-tag.rolling-back {
+  background-color: #FFF7E6;
+  color: #FA8C16;
+}
+
+.status-tag.ended {
+  background-color: #F5F5F5;
+  color: #8C8C8C;
 }
