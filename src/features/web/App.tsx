@@ -662,7 +662,7 @@ function App() {
             <DeploymentHeader isDarkMode={isDarkMode} />
 
             {/* 表格 */}
-            <div className="semi-table-container" style={{ marginBottom: '24px' }}>
+            <div className="semi-table-container">
                 <div style={{ 
                     border: '1px solid #e8e8e8', 
                     borderRadius: '6px',
@@ -674,7 +674,7 @@ function App() {
                     dataSource={groupedTableDataSource} 
                     rowSelection={rowSelection} 
                     pagination={pagination}
-                    scroll={useMemo(() => ({ x: 1500 }), [])}
+                    scroll={useMemo(() => ({ x: 1500, y: 'calc(100vh - 300px)' }), [])}
                     bordered={false}
                     size="small"
                     rowKey="key"

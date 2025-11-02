@@ -214,6 +214,7 @@ export const AddAppModal: React.FC<AddAppModalProps> = ({
             cancelText="取消"
             width={800}
             onMaskClick={closeAppSearch}
+            style={{ top: '10%' }}
         >
             <div style={{ marginBottom: '16px' }}>
                 <div style={{ 

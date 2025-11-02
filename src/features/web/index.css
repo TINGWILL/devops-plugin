@@ -92,13 +92,12 @@ body[theme-mode="dark"] ::-webkit-scrollbar-thumb:hover {
   box-sizing: border-box;
 }
 
-/* 表体容器：自适应高度，使用页面滚动条 */
+/* 表体容器：固定高度，内部滚动 */
 .semi-table-body-wrapper {
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: auto;
   width: 100%;
   box-sizing: border-box;
-  max-height: none;
 }
 
 /* 关键修复：当表体有垂直滚动条时，表头需要减去滚动条宽度 */
@@ -166,6 +165,10 @@ body[theme-mode="dark"] ::-webkit-scrollbar-thumb:hover {
   background: var(--semi-color-bg-0);
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  /* 固定表格容器高度，使用内部滚动 */
+  height: calc(100vh - 280px);
+  margin-bottom: 0 !important;
+  overflow: hidden;
 }
 
 .semi-table-container .semi-table {
@@ -520,4 +523,10 @@ body[theme-mode="dark"] .semi-table-container .semi-table .semi-table-tbody tr.s
 .status-tag.ended {
   background-color: #F5F5F5;
   color: #8C8C8C;
+}
+
+/* 弹窗位置调整 */
+.semi-modal-wrap .semi-modal {
+  top: 40% !important;
+  transform: translateY(-50%) !important;
 }
