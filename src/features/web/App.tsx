@@ -13,6 +13,7 @@ import { loadArrayFromStorage, saveArrayToStorage, loadFromStorage, saveToStorag
 import { extractGroupKeys } from '../../utils/groupKeyUtils';
 import { useFeishuTheme } from '../../hooks/useFeishuTheme';
 import { generateMockTasks } from '../../utils/mockData';
+import { useRealtimeDeployment } from '../../hooks/useRealtimeDeployment';
 
 // 使用 DeploymentTask 作为数据项类型
 type DataItem = DeploymentTask;
@@ -1169,6 +1170,34 @@ function App() {
         }
     }, [dataSource, saveTasks]);
 
+    // 实时获取后端部署状态更新
+    // 配置说明：
+    // - mode: 'polling' 使用轮询方式（默认，简单可靠）
+    // - mode: 'websocket' 使用WebSocket方式（需要后端支持）
+    // - mode: 'both' 同时使用两种方式（WebSocket + 轮询备用）
+    // - onlyUpdateInProgress: true 仅更新进行中的任务，已完成任务保持不变
+    const { isConnected, error: realtimeError, lastUpdateTime } = useRealtimeDeployment({
+        enabled: true, // 是否启用实时更新，可以通过配置控制
+        mode: 'polling', // 使用轮询方式，如需WebSocket可改为 'websocket' 或 'both'
+        pollingInterval: 5000, // 每5秒轮询一次，可根据需要调整（建议3-10秒）
+        onlyUpdateInProgress: true, // 仅更新进行中的任务，避免已完成任务被覆盖
+        onTasksUpdate: (tasks) => {
+            // 后端返回最新任务列表时，更新本地状态
+            // 注意：这里会合并更新，保留本地的 deployOrder 等字段
+            setData(tasks);
+        },
+        onTaskStatusUpdate: (update) => {
+            // 单个任务状态更新（WebSocket模式）
+            // 已经通过 onTasksUpdate 统一处理，这里可以添加额外的日志或通知
+            console.log('任务状态更新:', update);
+        },
+        onError: (error) => {
+            // 错误处理：可以显示Toast提示或记录日志
+            console.error('实时数据获取失败:', error);
+            // 可选：显示错误提示
+            // Toast.error('获取部署状态失败，请刷新页面重试');
+        }
+    });
 
     return (
         <div 
