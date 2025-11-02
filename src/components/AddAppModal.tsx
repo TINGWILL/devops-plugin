@@ -213,7 +213,7 @@ export const AddAppModal: React.FC<AddAppModalProps> = ({
             okText="确认"
             cancelText="取消"
             width={800}
-            onMaskClick={closeAppSearch}
+            mask={false}
         >
             <div style={{ marginBottom: '16px' }}>
                 <div style={{ 

@@ -47,6 +47,7 @@ export const BatchConfirmModal: React.FC<BatchConfirmModalProps> = ({
             okText="确认"
             cancelText="取消"
             width={600}
+            mask={false}
         >
             <div style={{ marginBottom: '16px' }}>
                 <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#666' }}>

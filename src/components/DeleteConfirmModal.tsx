@@ -28,6 +28,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             cancelText="取消"
             okButtonProps={{ type: 'danger' }}
             width={400}
+            mask={false}
         >
             <div style={{ marginBottom: '16px' }}>
                 <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#666' }}>
