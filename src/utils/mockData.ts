@@ -1,4 +1,4 @@
-import { DeploymentTask } from '../hooks/useDeploymentStatus';
+import { DeploymentTask } from '../types/deployment';
 import { DeploymentStatus } from '../constants/deploymentStatus';
 
 const DAY = 24 * 60 * 60 * 1000;

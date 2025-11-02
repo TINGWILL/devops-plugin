@@ -1,12 +1,14 @@
 import React from 'react';
 import { Button, Dropdown } from '@douyinfe/semi-ui';
 import { DeploymentStatus, OperationType } from '../constants/deploymentStatus';
-import { DeploymentTask } from '../hooks/useDeploymentStatus';
+import { DeploymentTask } from '../types/deployment';
+import { ButtonConfig } from '../types/deployment';
 
 interface OperationButtonsProps {
   task: DeploymentTask;
   onOperation: (operation: OperationType, task: DeploymentTask) => void;
-  getButtonConfig: (status: DeploymentStatus) => { first: any; second: any };
+  getButtonConfig: (status: DeploymentStatus) => ButtonConfig;
+  isLoading?: boolean; // 是否正在加载
 }
 
 /**
@@ -16,13 +18,16 @@ interface OperationButtonsProps {
 export const OperationButtons: React.FC<OperationButtonsProps> = ({
   task,
   onOperation,
-  getButtonConfig
+  getButtonConfig,
+  isLoading = false
 }) => {
   const config = getButtonConfig(task.taskStatus);
   
   // 按钮点击处理函数
   const handleButtonClick = (action: OperationType) => {
-    onOperation(action, task);
+    if (!isLoading) {
+      onOperation(action, task);
+    }
   };
 
   return (
@@ -43,8 +48,9 @@ export const OperationButtons: React.FC<OperationButtonsProps> = ({
         <Button 
           size="small" 
           type={config.first.type || 'primary'}
-          disabled={!config.first.enabled}
-          onClick={() => handleButtonClick(config.first.action)}
+          disabled={!config.first.enabled || isLoading}
+          loading={isLoading && config.first.action === OperationType.DEPLOY}
+          onClick={() => handleButtonClick(config.first!.action)}
           style={{ 
             flex: '1 1 0',
             minWidth: 0,
@@ -114,7 +120,7 @@ export const OperationButtons: React.FC<OperationButtonsProps> = ({
           // 禁用状态：显示禁用的按钮，不显示下拉框
           <Button 
             size="small" 
-            type={config.second.type || 'primary'}
+            type={config.second.type || 'primary' as any}
             disabled={true}
             style={{ 
               flex: '1 1 0',

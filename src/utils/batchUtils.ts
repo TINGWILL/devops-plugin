@@ -1,4 +1,4 @@
-import { DeploymentTask } from '../hooks/useDeploymentStatus';
+import { DeploymentTask } from '../types/deployment';
 
 /**
  * 生成分组标识符（Group Key）
@@ -7,6 +7,17 @@ export function generateGroupKey(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
   return `BATCH-${timestamp}-${random}`;
+}
+
+/**
+ * 按部署顺序排序任务
+ */
+export function sortTasksByDeployOrder(tasks: DeploymentTask[]): DeploymentTask[] {
+  return [...tasks].sort((a, b) => {
+    const orderA = a.deployOrder ?? 999999;
+    const orderB = b.deployOrder ?? 999999;
+    return orderA - orderB;
+  });
 }
 
 /**
@@ -46,11 +57,7 @@ export function groupTasksByBatch(tasks: DeploymentTask[]): {
   const batches: BatchInfo[] = Array.from(groupMap.entries())
     .map(([groupKey, groupTasks]) => {
       const createTime = Math.min(...groupTasks.map(t => t.deployTime));
-      const sortedTasks = [...groupTasks].sort((a, b) => {
-        const orderA = a.deployOrder ?? 999999;
-        const orderB = b.deployOrder ?? 999999;
-        return orderA - orderB;
-      });
+      const sortedTasks = sortTasksByDeployOrder(groupTasks);
 
       return {
         batchId: groupKey, // 兼容旧接口

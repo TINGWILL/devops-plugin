@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Toast } from '@douyinfe/semi-ui';
 import { DeploymentStatus, OperationType, isOperationApplicable, getOperationTypeName } from '../constants/deploymentStatus';
-import { DeploymentTask } from './useDeploymentStatus';
+import { DeploymentTask } from '../types/deployment';
 
 export interface BatchOperationResult {
   applicable: DeploymentTask[];

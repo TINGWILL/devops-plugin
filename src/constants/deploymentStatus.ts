@@ -3,6 +3,8 @@
  * 根据流程图重新定义状态和操作逻辑
  */
 
+import { ButtonConfig } from '../types/deployment';
+
 // 部署状态枚举
 export enum DeploymentStatus {
   PENDING = '待部署',
@@ -63,19 +65,6 @@ export enum OperationType {
   DELETE = 'delete'
 }
 
-// 按钮配置接口
-export interface ButtonConfig {
-  text: string;
-  action: OperationType;
-  enabled: boolean;
-  type?: 'primary' | 'secondary' | 'danger';
-  items?: Array<{
-    key: OperationType;
-    text: string;
-    enabled: boolean;
-  }>;
-}
-
 // 状态流转规则
 export const STATUS_TRANSITIONS = {
   [DeploymentStatus.PENDING]: [
@@ -105,7 +94,7 @@ export const STATUS_TRANSITIONS = {
 };
 
 // 根据状态获取按钮配置
-export const getButtonConfig = (status: DeploymentStatus): { first: ButtonConfig | null; second: ButtonConfig | null } => {
+export const getButtonConfig = (status: DeploymentStatus): ButtonConfig => {
   const configs = {
     [DeploymentStatus.PENDING]: {
       first: { 
