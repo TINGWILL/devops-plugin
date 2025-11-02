@@ -1,0 +1,406 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for utils/mockData.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">utils</a> mockData.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/78</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/78</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { DeploymentTask } from '../types/deployment';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+import { DeploymentStatus } from '../constants/deploymentStatus';
+&nbsp;
+<span class="cstat-no" title="statement not covered" >const DAY = 24 * 60 * 60 * 1000;</span>
+&nbsp;
+/**
+ * 生成 Mock 部署任务数据
+ * 用于开发测试，所有数据字段都是固定值，确保每次刷新页面时数据一致
+ */
+<span class="cstat-no" title="statement not covered" >export function generateMockTasks(): DeploymentTask[] {</span>
+<span class="cstat-no" title="statement not covered" >  const data: DeploymentTask[] = [];</span>
+<span class="cstat-no" title="statement not covered" >  const appNames = ['用户服务', '订单服务', '支付服务', '商品服务', '库存服务', '通知服务'];</span>
+<span class="cstat-no" title="statement not covered" >  const deployStatuses = ['success', 'failed', 'pending'];</span>
+<span class="cstat-no" title="statement not covered" >  const podStatuses = ['running', 'pending', 'failed'];</span>
+<span class="cstat-no" title="statement not covered" >  const clusters = [</span>
+<span class="cstat-no" title="statement not covered" >    'CBG多业务森华机房k8s集群(1.15)',</span>
+<span class="cstat-no" title="statement not covered" >    '输入法业务酒仙桥机房k8s集群(1.15)',</span>
+<span class="cstat-no" title="statement not covered" >    '公研北京阿里云机房k8s集群(1.32.4)',</span>
+<span class="cstat-no" title="statement not covered" >    '输入法北京阿里云机房k8s集群(1.32.4)'</span>
+<span class="cstat-no" title="statement not covered" >  ];</span>
+<span class="cstat-no" title="statement not covered" >  const namespaces = ['default', 'production', 'staging', 'development'];</span>
+<span class="cstat-no" title="statement not covered" >  const envTags = ['prod', 'test', 'dev', 'staging', 'gray'];</span>
+<span class="cstat-no" title="statement not covered" >  const deployers = ['张三', '李四', '王五', '赵六', '钱七'];</span>
+&nbsp;
+  // 使用固定的基准时间戳（2024-01-01 00:00:00），确保每次生成的数据一致
+<span class="cstat-no" title="statement not covered" >  const BASE_TIMESTAMP = new Date('2024-01-01T00:00:00').valueOf();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  for (let i = 0; i &lt; 46; i++) {</span>
+<span class="cstat-no" title="statement not covered" >    const offsetNumber = (i * 1000) % 199;</span>
+<span class="cstat-no" title="statement not covered" >    const appIndex = i % appNames.length;</span>
+<span class="cstat-no" title="statement not covered" >    const deployerIndex = i % deployers.length;</span>
+&nbsp;
+    // 明确指定某些任务的状态，用于测试不同状态的复选框禁用功能
+<span class="cstat-no" title="statement not covered" >    let taskStatus: DeploymentStatus;</span>
+<span class="cstat-no" title="statement not covered" >    if (i === 8 || i === 9) {</span>
+<span class="cstat-no" title="statement not covered" >      taskStatus = DeploymentStatus.DEPLOYING;</span>
+<span class="cstat-no" title="statement not covered" >    } else if (i === 15 || i === 16) {</span>
+<span class="cstat-no" title="statement not covered" >      taskStatus = DeploymentStatus.APPROVING;</span>
+<span class="cstat-no" title="statement not covered" >    } else if (i === 22 || i === 23) {</span>
+<span class="cstat-no" title="statement not covered" >      taskStatus = DeploymentStatus.ROLLING_BACK;</span>
+<span class="cstat-no" title="statement not covered" >    } else if (i === 5 || i === 10 || i === 18 || i === 25 || i === 30) {</span>
+      // 设置多条数据为部署失败，用于测试错误信息显示
+<span class="cstat-no" title="statement not covered" >      taskStatus = DeploymentStatus.DEPLOYMENT_FAILED;</span>
+<span class="cstat-no" title="statement not covered" >    } else {</span>
+<span class="cstat-no" title="statement not covered" >      taskStatus = DeploymentStatus.PENDING;</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+    
+    // 为所有部署失败的任务添加错误信息（模拟真实场景）
+<span class="cstat-no" title="statement not covered" >    let errorMessage: string | undefined;</span>
+<span class="cstat-no" title="statement not covered" >    let errorTime: number | undefined;</span>
+<span class="cstat-no" title="statement not covered" >    if (taskStatus === DeploymentStatus.DEPLOYMENT_FAILED) {</span>
+      // 根据索引生成不同的错误信息，模拟不同类型的失败场景
+<span class="cstat-no" title="statement not covered" >      const errorTypes = [</span>
+        // 索引 5: 镜像拉取失败
+<span class="cstat-no" title="statement not covered" >        `镜像拉取失败：Failed to pull image "registry.company.com/${appNames[appIndex]}:${`v1.${i % 10}.${offsetNumber % 10}`}"\n错误详情：Error response from daemon: Get https://registry.company.com/v2/: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)\n建议操作：\n1. 检查镜像仓库连接是否正常\n2. 确认镜像标签是否存在\n3. 检查网络连接或代理配置`,</span>
+        // 索引 10: Pod 启动失败
+<span class="cstat-no" title="statement not covered" >        `Pod 启动失败：Failed to start container "${appNames[appIndex]}"\n错误详情：Error: ImagePullBackOff - Back-off pulling image "registry.company.com/${appNames[appIndex]}:${`v1.${i % 10}.${offsetNumber % 10}`}"\nPod状态：CrashLoopBackOff\n建议操作：\n1. 检查镜像是否存在或标签是否正确\n2. 查看 Pod 日志排查启动问题\n3. 检查资源配置是否充足`,</span>
+        // 索引 18: 资源不足
+<span class="cstat-no" title="statement not covered" >        `资源分配失败：Insufficient resources in cluster "${clusters[i % clusters.length]}"\n错误详情：0/4 nodes are available: 4 Insufficient cpu, 4 Insufficient memory\n节点资源：CPU 0.5/2.0, Memory 1Gi/4Gi\n建议操作：\n1. 检查集群资源使用情况\n2. 尝试在其他命名空间部署\n3. 联系运维扩容节点资源`,</span>
+        // 索引 25: 健康检查失败
+<span class="cstat-no" title="statement not covered" >        `健康检查失败：Readiness probe failed for container "${appNames[appIndex]}"\n错误详情：Get http://localhost:8080/health: dial tcp 127.0.0.1:8080: connect: connection refused\n检查时间：已连续失败 3 次，间隔 10 秒\n建议操作：\n1. 检查应用健康检查端点是否正常\n2. 查看容器日志排查应用启动问题\n3. 调整健康检查配置或超时时间`,</span>
+        // 索引 30: 网络配置错误
+<span class="cstat-no" title="statement not covered" >        `网络配置错误：Service endpoint creation failed\n错误详情：Failed to create service endpoint: network policy violation - pod label mismatch\n命名空间：${namespaces[i % namespaces.length]}\n建议操作：\n1. 检查 Pod 标签是否匹配 Service 选择器\n2. 验证网络策略配置是否正确\n3. 确认命名空间的网络隔离策略`</span>
+<span class="cstat-no" title="statement not covered" >      ];</span>
+      
+<span class="cstat-no" title="statement not covered" >      const errorIndex = [5, 10, 18, 25, 30].indexOf(i);</span>
+<span class="cstat-no" title="statement not covered" >      if (errorIndex !== -1) {</span>
+<span class="cstat-no" title="statement not covered" >        errorMessage = errorTypes[errorIndex];</span>
+<span class="cstat-no" title="statement not covered" >      } else {</span>
+        // 默认错误信息
+<span class="cstat-no" title="statement not covered" >        errorMessage = `部署失败：Deployment failed for application "${appNames[appIndex]}"\n错误详情：Unknown error occurred during deployment process\n集群：${clusters[i % clusters.length]}\n命名空间：${namespaces[i % namespaces.length]}\n建议操作：\n1. 查看部署日志获取详细错误信息\n2. 检查应用配置是否正确\n3. 联系运维人员协助排查`;</span>
+<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >      errorTime = BASE_TIMESTAMP + offsetNumber * DAY;</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    data.push({</span>
+<span class="cstat-no" title="statement not covered" >      key: String(i),</span>
+<span class="cstat-no" title="statement not covered" >      appName: `${appNames[appIndex]}${i &gt; 5 ? `-${i}` : ''}`,</span>
+<span class="cstat-no" title="statement not covered" >      deployStatus: deployStatuses[i % deployStatuses.length],</span>
+<span class="cstat-no" title="statement not covered" >      podStatus: podStatuses[i % podStatuses.length],</span>
+<span class="cstat-no" title="statement not covered" >      version: `v1.${i % 10}.${offsetNumber % 10}`,</span>
+<span class="cstat-no" title="statement not covered" >      cluster: clusters[i % clusters.length],</span>
+<span class="cstat-no" title="statement not covered" >      namespace: namespaces[i % namespaces.length],</span>
+<span class="cstat-no" title="statement not covered" >      envTag: envTags[i % envTags.length],</span>
+<span class="cstat-no" title="statement not covered" >      deployTime: BASE_TIMESTAMP + offsetNumber * DAY,</span>
+<span class="cstat-no" title="statement not covered" >      deployer: deployers[deployerIndex],</span>
+<span class="cstat-no" title="statement not covered" >      avatarBg: ['grey', 'red', 'blue', 'green', 'orange'][i % 5],</span>
+<span class="cstat-no" title="statement not covered" >      taskStatus,</span>
+<span class="cstat-no" title="statement not covered" >      deployOrder: undefined,</span>
+<span class="cstat-no" title="statement not covered" >      groupKey: undefined, // Mock 数据默认无分组</span>
+<span class="cstat-no" title="statement not covered" >      errorMessage, // 错误信息（仅部署失败时有值）</span>
+<span class="cstat-no" title="statement not covered" >      errorTime // 错误发生时间（仅部署失败时有值）</span>
+<span class="cstat-no" title="statement not covered" >    });</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+&nbsp;
+  // 按照发布集群、命名空间、环境标签进行排序
+<span class="cstat-no" title="statement not covered" >  return data.sort((a, b) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    const clusterCompare = a.cluster.localeCompare(b.cluster);</span>
+<span class="cstat-no" title="statement not covered" >    if (clusterCompare !== 0) return clusterCompare;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    const namespaceCompare = a.namespace.localeCompare(b.namespace);</span>
+<span class="cstat-no" title="statement not covered" >    if (namespaceCompare !== 0) return namespaceCompare;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return a.envTag.localeCompare(b.envTag);</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2025-11-02T08:04:46.174Z
+            </div>
+        <script src="../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../sorter.js"></script>
+        <script src="../block-navigation.js"></script>
+    </body>
+</html>
+    

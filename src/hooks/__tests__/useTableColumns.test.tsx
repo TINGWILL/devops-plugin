@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useTableColumns } from '../useTableColumns';
 import { DeploymentTask } from '../../types/deployment';
-import { DeploymentStatus, OperationType } from '../../constants/deploymentStatus';
+import { DeploymentStatus } from '../../constants/deploymentStatus';
 import { ButtonConfig } from '../../types/deployment';
 
 // Mock Semi Design components
@@ -408,7 +408,7 @@ describe('useTableColumns', () => {
         {
           initialProps: {
             dataSource: [task],
-            selectedRowKeys: [],
+            selectedRowKeys: [] as string[],
             onDeployOrderChange: mockOnDeployOrderChange,
             onOperation: mockOnOperation,
             getButtonConfig: mockGetButtonConfig,
@@ -419,7 +419,7 @@ describe('useTableColumns', () => {
         }
       );
 
-      const columns1 = result.current.columns;
+      expect(result.current.columns).toBeDefined();
 
       rerender({
         dataSource: [task],
@@ -432,11 +432,14 @@ describe('useTableColumns', () => {
         isDarkMode: false,
       });
 
-      const columns2 = result.current.columns;
-
       // useMemo 应该检测到依赖变化并重新生成
-      expect(columns2).toBeDefined();
-      // 注意：由于 useMemo，如果依赖未变，引用可能相同，所以这里主要验证功能正常
+      expect(result.current.columns).toBeDefined();
+      expect(result.current.columns.length).toBe(11);
+      // 验证部署顺序列在选中状态下能正确渲染
+      const deployOrderColumn = result.current.columns.find(
+        (col) => col.dataIndex === 'deployOrder'
+      );
+      expect(deployOrderColumn).toBeDefined();
     });
 
     it('isDarkMode 变化时应该重新生成 columns', () => {
