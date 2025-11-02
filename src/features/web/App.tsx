@@ -146,6 +146,16 @@ function App() {
     // 飞书项目系统主题跟随
     const isDarkMode = useFeishuTheme();
 
+    // 配置 Toast 容器（仅在组件挂载时配置一次）
+    // 注意：Toast 需要渲染到 document.body 才能在所有层级显示
+    useEffect(() => {
+        if (Toast.config) {
+            Toast.config({
+                getPopupContainer: () => document.body
+            });
+        }
+    }, []);
+
     // 分组展开状态（存储所有展开的分组 groupKey）
     // 优先从本地存储恢复，如果没有则使用空数组
     const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>(() => 
@@ -822,7 +832,14 @@ function App() {
                 const orderB = STATUS_CONFIG[b.taskStatus]?.order || 999;
                 return orderA - orderB;
             },
-            render: (text) => <StatusTag status={text as DeploymentStatus} />
+            render: (text, record) => (
+                <StatusTag 
+                    status={text as DeploymentStatus}
+                    errorMessage={record.errorMessage}
+                    errorTime={record.errorTime}
+                    isDarkMode={isDarkMode}
+                />
+            )
             },
             {
               title: '版本号',
@@ -1105,10 +1122,34 @@ function App() {
     // 初始化数据加载：
     // 1. 优先从 localStorage 加载操作后的真实数据（如果有）
     // 2. 如果没有，则使用 mock 数据作为初始数据
+    // 3. 为部署失败的任务补充错误信息（兼容旧数据）
     useEffect(() => {
         const storedTasks = loadFromStorage<DataItem[]>(STORAGE_KEYS.TASKS_DATA);
         if (storedTasks && Array.isArray(storedTasks) && storedTasks.length > 0) {
-            setData(storedTasks);
+            // 检查并补充错误信息：为部署失败但没有错误信息的任务添加 mock 错误信息
+            const tasksWithErrors = storedTasks.map((task, index) => {
+                if (
+                    task.taskStatus === DeploymentStatus.DEPLOYMENT_FAILED &&
+                    (!task.errorMessage || !task.errorTime)
+                ) {
+                    // 生成默认错误信息
+                    const errorMessages = [
+                        `镜像拉取失败：Failed to pull image "registry.company.com/${task.appName}:${task.version}"\n错误详情：Error response from daemon: Get https://registry.company.com/v2/: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)\n建议操作：\n1. 检查镜像仓库连接是否正常\n2. 确认镜像标签是否存在\n3. 检查网络连接或代理配置`,
+                        `Pod 启动失败：Failed to start container "${task.appName}"\n错误详情：Error: ImagePullBackOff - Back-off pulling image "registry.company.com/${task.appName}:${task.version}"\nPod状态：CrashLoopBackOff\n建议操作：\n1. 检查镜像是否存在或标签是否正确\n2. 查看 Pod 日志排查启动问题\n3. 检查资源配置是否充足`,
+                        `资源分配失败：Insufficient resources in cluster "${task.cluster}"\n错误详情：0/4 nodes are available: 4 Insufficient cpu, 4 Insufficient memory\n节点资源：CPU 0.5/2.0, Memory 1Gi/4Gi\n建议操作：\n1. 检查集群资源使用情况\n2. 尝试在其他命名空间部署\n3. 联系运维扩容节点资源`,
+                        `健康检查失败：Readiness probe failed for container "${task.appName}"\n错误详情：Get http://localhost:8080/health: dial tcp 127.0.0.1:8080: connect: connection refused\n检查时间：已连续失败 3 次，间隔 10 秒\n建议操作：\n1. 检查应用健康检查端点是否正常\n2. 查看容器日志排查应用启动问题\n3. 调整健康检查配置或超时时间`,
+                        `网络配置错误：Service endpoint creation failed\n错误详情：Failed to create service endpoint: network policy violation - pod label mismatch\n命名空间：${task.namespace}\n建议操作：\n1. 检查 Pod 标签是否匹配 Service 选择器\n2. 验证网络策略配置是否正确\n3. 确认命名空间的网络隔离策略`
+                    ];
+                    const errorIndex = index % errorMessages.length;
+                    return {
+                        ...task,
+                        errorMessage: errorMessages[errorIndex],
+                        errorTime: task.errorTime || task.deployTime || Date.now()
+                    };
+                }
+                return task;
+            });
+            setData(tasksWithErrors);
         } else {
             setData(generateMockTasks());
         }
