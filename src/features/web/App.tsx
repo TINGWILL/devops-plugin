@@ -314,6 +314,13 @@ function App() {
         onDataChange: setData
     });
 
+    // 处理忽略部署失败变更
+    const handleIgnoreFailChange = useCallback((key: string, checked: boolean) => {
+        setData(prev => prev.map(item => 
+            item.key === key ? { ...item, ignoreFail: checked } : item
+        ));
+    }, [setData]);
+
     // 删除操作已移至Hook中处理
 
     // 批量操作确认逻辑 - 使用 Hook
@@ -385,6 +392,7 @@ function App() {
         dataSource,
         selectedRowKeys,
         onDeployOrderChange: handleDeployOrderChange,
+        onIgnoreFailChange: handleIgnoreFailChange,
         onOperation: handleOperation,
         getButtonConfig,
         isTaskLoading,

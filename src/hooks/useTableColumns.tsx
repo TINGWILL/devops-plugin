@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Avatar, Tag, Input } from '@douyinfe/semi-ui';
+import React, { useMemo } from 'react';
+import { Avatar, Tag, Input, Checkbox } from '@douyinfe/semi-ui';
 import * as dateFns from 'date-fns';
 import { DeploymentTask } from '../types/deployment';
 import { ButtonConfig } from '../types/deployment';
@@ -17,6 +17,7 @@ interface UseTableColumnsProps {
     dataSource: DeploymentTask[];
     selectedRowKeys: string[];
     onDeployOrderChange: (key: string, value: string) => void;
+    onIgnoreFailChange: (key: string, checked: boolean) => void;
     onOperation: (operation: OperationType, task: DeploymentTask, silent?: boolean) => Promise<void>;
     getButtonConfig: (status: DeploymentStatus) => ButtonConfig;
     isTaskLoading: (key: string) => boolean;
@@ -32,6 +33,7 @@ export const useTableColumns = ({
     dataSource,
     selectedRowKeys,
     onDeployOrderChange,
+    onIgnoreFailChange,
     onOperation,
     getButtonConfig,
     isTaskLoading,
@@ -191,6 +193,33 @@ export const useTableColumns = ({
             }
         },
         {
+            title: '忽略部署失败',
+            dataIndex: 'ignoreFail',
+            width: 120,
+            onCell: () => ({
+                onClick: (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                }
+            }),
+            render: (text: boolean | undefined, record: DeploymentTask) => {
+                // 只有选中第一列复选框且为待部署状态时才显示
+                if (!selectedRowKeys.includes(record.key) || record.taskStatus !== DeploymentStatus.PENDING) {
+                    return <div style={{ textAlign: 'center', height: '28px', lineHeight: '28px', color: '#999' }}>-</div>;
+                }
+                return (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '28px' }}>
+                        <Checkbox
+                            checked={record.ignoreFail === true}
+                            onChange={(e) => {
+                                const checked = typeof e === 'boolean' ? e : (e?.target?.checked ?? false);
+                                onIgnoreFailChange(record.key, checked);
+                            }}
+                        />
+                    </div>
+                );
+            }
+        },
+        {
             title: 'Pod状态',
             dataIndex: 'podStatus',
             width: 120,
@@ -252,7 +281,7 @@ export const useTableColumns = ({
                 />
             ),
         },
-    ], [selectedRowKeys, onDeployOrderChange, onOperation, getButtonConfig, compareGroupOrder, isTaskLoading, isDarkMode]);
+    ], [selectedRowKeys, onDeployOrderChange, onIgnoreFailChange, onOperation, getButtonConfig, compareGroupOrder, isTaskLoading, isDarkMode]);
 
     return {
         columns

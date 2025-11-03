@@ -51,6 +51,7 @@ export interface DeploymentTask {
   paused?: boolean;
   errorMessage?: string;
   errorTime?: number;
+  ignoreFail?: boolean; // 忽略部署失败
 }
 
 /**
