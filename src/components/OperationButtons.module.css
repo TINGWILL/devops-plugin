@@ -1,0 +1,79 @@
+/* 操作按钮容器 */
+.operationButtons {
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+/* 第一个按钮样式 */
+.firstButton {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: calc(65% - 1px);
+  text-align: center;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 16px;
+  font-size: 12px;
+  line-height: 20px;
+  min-height: 32px;
+  height: 32px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+/* 第二个按钮 - 下拉菜单按钮（启用状态） */
+.secondButton {
+  flex: 0 0 auto;
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* 第二个按钮 - 禁用状态（统一大小） */
+.secondButtonDisabled {
+  flex: 0 0 auto;
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 三个点图标 */
+.threeDots {
+  font-size: 12px;
+  line-height: 18px;
+  display: inline-block;
+}
+

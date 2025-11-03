@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal } from '@douyinfe/semi-ui';
 import { DeploymentTask } from '../types/deployment';
+import styles from './DeleteConfirmModal.module.css';
 
 interface DeleteConfirmModalProps {
     visible: boolean;
@@ -28,13 +29,12 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             cancelText="取消"
             okButtonProps={{ type: 'danger' }}
             width={400}
-            style={{ top: '10%' }}
         >
-            <div style={{ marginBottom: '16px' }}>
-                <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#666' }}>
+            <div className={styles.modalContent}>
+                <p className={styles.modalText}>
                     确定要删除任务 <strong>{task?.appName}</strong> 吗？
                 </p>
-                <p style={{ margin: '0', fontSize: '12px', color: '#999' }}>
+                <p className={styles.modalHint}>
                     此操作不可恢复，请谨慎操作。
                 </p>
             </div>

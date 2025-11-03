@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal } from '@douyinfe/semi-ui';
 import { OperationType } from '../constants/deploymentStatus';
+import styles from './BatchConfirmModal.module.css';
 
 interface BatchConfirmModalProps {
     visible: boolean;
@@ -47,21 +48,13 @@ export const BatchConfirmModal: React.FC<BatchConfirmModalProps> = ({
             okText="确认"
             cancelText="取消"
             width={600}
-            style={{ top: '10%' }}
         >
-            <div style={{ marginBottom: '16px' }}>
-                <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#666' }}>
+            <div className={styles.modalContent}>
+                <p className={styles.modalText}>
                     您选择了 {selectedCount} 个任务，系统将执行批量{getOperationTypeName(operation)}操作。
                 </p>
                 
-                <div style={{ 
-                    padding: '12px', 
-                    backgroundColor: '#fafafa', 
-                    border: '1px solid #d9d9d9', 
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    color: '#666'
-                }}>
+                <div className={styles.modalInfoBox}>
                     <strong>操作说明：</strong><br/>
                     {operation === OperationType.DEPLOY && <>• 只有"待部署"状态的任务可以批量部署</>}
                     {operation === OperationType.WHITELIST && <>• 只有"待部署"状态的任务可以申请加白</>}

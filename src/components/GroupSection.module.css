@@ -1,0 +1,35 @@
+/* 分组头部容器 */
+.groupSection {
+  display: inline-block;
+}
+
+/* 分组标签 */
+.groupTag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+/* 默认分组标签 */
+.defaultGroupTag {
+  background-color: var(--semi-color-fill-1);
+  color: var(--semi-color-text-0);
+}
+
+/* 批次分组标签（颜色动态设置） */
+.batchGroupTag {
+  color: #000000;
+}
+
+/* 分组数量文本 */
+.groupCount {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--semi-color-text-2);
+  font-weight: 400;
+}
+

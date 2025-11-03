@@ -1,0 +1,122 @@
+/* 状态标签容器 */
+.statusTagContainer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 状态标签基础样式 */
+.statusTag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+/* 状态类型样式 */
+.pending {
+  background-color: #FFF7E6;
+  color: #FA8C16;
+}
+
+.approving {
+  background-color: #E6F4FF;
+  color: #1890FF;
+}
+
+.deploying {
+  background-color: #E6F4FF;
+  color: #1890FF;
+}
+
+.deployed {
+  background-color: #F6FFED;
+  color: #52C41A;
+}
+
+.failed {
+  background-color: #FFF1F0;
+  color: #F5222D;
+}
+
+.rollingBack {
+  background-color: #FFF7E6;
+  color: #FA8C16;
+}
+
+.ended {
+  background-color: #F5F5F5;
+  color: #8C8C8C;
+}
+
+/* 错误信息图标样式 */
+.errorInfoIcon {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  color: #8c8c8c;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.errorInfoIcon:hover {
+  color: #1890ff;
+}
+
+/* 错误气泡卡片包装器 */
+.errorPopoverWrapper :global(.semi-popover-content) {
+  padding: 0;
+}
+
+/* 错误气泡卡片样式 */
+.errorPopover {
+  width: 360px;
+  padding: 0;
+}
+
+.errorPopoverHeader {
+  padding: 16px;
+  background-color: var(--semi-color-bg-0);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+}
+
+.errorIcon {
+  color: #ff4d4f;
+  font-size: 16px;
+}
+
+.errorPopoverContent {
+  background-color: var(--semi-color-fill-0);
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  border: 1px solid var(--semi-color-border);
+  font-size: 13px;
+  color: var(--semi-color-text-1);
+  line-height: 20px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.errorPopoverFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px 16px 16px;
+}
+
+.errorTime {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+

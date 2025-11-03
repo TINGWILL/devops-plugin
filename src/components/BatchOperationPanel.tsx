@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, Dropdown } from '@douyinfe/semi-ui';
 import { DeploymentTask } from '../types/deployment';
 import { OperationType } from '../constants/deploymentStatus';
+import styles from './BatchOperationPanel.module.css';
 
 interface BatchOperationPanelProps {
     selectedRowKeys: string[];
@@ -25,7 +26,7 @@ export const BatchOperationPanel: React.FC<BatchOperationPanelProps> = ({
     canPerformBatchOperation
 }) => {
     return (
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div className={styles.batchOperationPanel}>
             {/* 批量部署按钮：默认禁用，只有选中符合条件的待部署任务时才启用 */}
             <Button
                 type="primary"
@@ -55,11 +56,7 @@ export const BatchOperationPanel: React.FC<BatchOperationPanelProps> = ({
                                             handleBatchAction(item.key);
                                         }
                                     }}
-                                    style={{
-                                        opacity: isEnabled ? 1 : 0.5,
-                                        cursor: isEnabled ? 'pointer' : 'not-allowed',
-                                        pointerEvents: isEnabled ? 'auto' : 'none'
-                                    }}
+                                    className={!isEnabled ? styles.dropdownItemDisabled : undefined}
                                 >
                                     {item.text}
                                 </Dropdown.Item>
@@ -80,12 +77,8 @@ export const BatchOperationPanel: React.FC<BatchOperationPanelProps> = ({
             </Dropdown>
             
             {selectedRowKeys.length > 0 && (
-                <span style={{ 
-                    fontSize: '12px', 
-                    color: '#666',
-                    whiteSpace: 'nowrap'
-                }}>
-                    已选择 {selectedRowKeys.length}                     个任务
+                <span className={styles.selectedCount}>
+                    已选择 {selectedRowKeys.length} 个任务
                 </span>
             )}
         </div>

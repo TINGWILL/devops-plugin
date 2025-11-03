@@ -1,0 +1,21 @@
+/* 批量操作面板容器 */
+.batchOperationPanel {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 选中数量文本 */
+.selectedCount {
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+  white-space: nowrap;
+}
+
+/* 下拉菜单项禁用状态 */
+.dropdownItemDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+

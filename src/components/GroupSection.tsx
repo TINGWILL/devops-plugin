@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { DeploymentTask } from '../types/deployment';
+import styles from './GroupSection.module.css';
 
 interface GroupSectionProps {
     groupKey: string | number | undefined;
@@ -29,30 +30,11 @@ export const GroupSection: React.FC<GroupSectionProps> = ({
         }, [tableDataSource]);
         
         return (
-            <span>
-                <span
-                    style={{
-                        display: 'inline-block',
-                        backgroundColor: '#F5F5F5',
-                        color: '#000000',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        marginRight: '8px',
-                        fontSize: '14px',
-                        lineHeight: '20px',
-                        fontWeight: 400,
-                    }}
-                >
+            <span className={styles.groupSection}>
+                <span className={`${styles.groupTag} ${styles.defaultGroupTag}`}>
                     默认分组
                 </span>
-                <span
-                    style={{
-                        fontSize: '12px',
-                        lineHeight: '20px',
-                        color: '#8C8C8C',
-                        fontWeight: 400,
-                    }}
-                >
+                <span className={styles.groupCount}>
                     共{unbatchedTasks.length}个
                 </span>
             </span>
@@ -68,30 +50,15 @@ export const GroupSection: React.FC<GroupSectionProps> = ({
     const tagColor = getGroupTagColor(groupInfo.groupNumber);
     
     return (
-        <span>
-            <span
-                style={{
-                    display: 'inline-block',
-                    backgroundColor: tagColor.bg,
-                    color: '#000000',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    marginRight: '8px',
-                    fontSize: '14px',
-                    lineHeight: '20px',
-                    fontWeight: 400,
-                }}
+        <span className={styles.groupSection}>
+            <span 
+                className={`${styles.groupTag} ${styles.batchGroupTag}`}
+                style={{ backgroundColor: tagColor.bg }}
+                data-tag-color={tagColor.bg}
             >
                 分组 {groupInfo.groupNumber}
             </span>
-            <span
-                style={{
-                    fontSize: '12px',
-                    lineHeight: '20px',
-                    color: '#8C8C8C',
-                    fontWeight: 400,
-                }}
-            >
+            <span className={styles.groupCount}>
                 共{groupInfo.taskCount}个
             </span>
         </span>

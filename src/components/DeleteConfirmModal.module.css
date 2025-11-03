@@ -1,0 +1,17 @@
+/* 删除确认弹窗内容 */
+.modalContent {
+  margin-bottom: 16px;
+}
+
+.modalText {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: var(--semi-color-text-1);
+}
+
+.modalHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--semi-color-text-2);
+}
+

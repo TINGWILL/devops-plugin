@@ -1,0 +1,67 @@
+/* 页面容器样式 */
+.appContainer {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px 24px 24px;
+  color: var(--semi-color-text-0);
+  background-color: var(--semi-color-bg-0);
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+/* 页面头部 */
+.appHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.appHeaderLeft {
+  display: flex;
+  align-items: center;
+}
+
+.appHeaderTitleIndicator {
+  width: 4px;
+  height: 20px;
+  background-color: #3250eb;
+  border-radius: 2px;
+  margin-right: 12px;
+}
+
+.appHeaderTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--semi-color-text-0);
+  margin: 0;
+}
+
+.appHeaderActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 暗色模式 */
+:global(body[theme-mode="dark"]) .appContainer {
+  background-color: #2f3037;
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .appContainer {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .appContainer {
+    padding: 0 12px;
+  }
+}
+

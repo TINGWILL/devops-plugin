@@ -3,6 +3,7 @@ import { Button, Dropdown } from '@douyinfe/semi-ui';
 import { DeploymentStatus, OperationType } from '../constants/deploymentStatus';
 import { DeploymentTask } from '../types/deployment';
 import { ButtonConfig } from '../types/deployment';
+import styles from './OperationButtons.module.css';
 
 interface OperationButtonsProps {
   task: DeploymentTask;
@@ -31,18 +32,7 @@ export const OperationButtons: React.FC<OperationButtonsProps> = ({
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      gap: '5px',
-      padding: '0',
-      margin: '0',
-      alignItems: 'center', 
-      width: '100%',
-      maxWidth: '100%',
-      minWidth: 0,
-      overflow: 'visible',
-      boxSizing: 'border-box'
-    }}>
+    <div className={styles.operationButtons}>
       {/* 第一个按钮 */}
       {config.first && (
         <Button 
@@ -51,25 +41,7 @@ export const OperationButtons: React.FC<OperationButtonsProps> = ({
           disabled={!config.first.enabled || isLoading}
           loading={isLoading && config.first.action === OperationType.DEPLOY}
           onClick={() => handleButtonClick(config.first!.action)}
-          style={{ 
-            flex: '1 1 0',
-            minWidth: 0,
-            maxWidth: 'calc(50% - 1px)',
-            textAlign: 'center',
-            display: 'inline-flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '8px 32px',
-            fontSize: '12px',
-            lineHeight: '20px',
-            minHeight: '28px',
-            height: '28px',
-            margin: '0',
-            whiteSpace: 'nowrap',
-            overflow: 'visible',
-            textOverflow: 'ellipsis',
-            boxSizing: 'border-box'
-          }}
+          className={styles.firstButton}
         >
           {config.first.text}
         </Button>
@@ -98,22 +70,9 @@ export const OperationButtons: React.FC<OperationButtonsProps> = ({
             <Button 
               size="small" 
               type={config.second.type || 'primary'}
-              style={{ 
-                flex: '0 0 auto',
-                width: '22px',
-                minWidth: '22px',
-                maxWidth: '22px',
-                height: '28px',
-                minHeight: '28px',
-                padding: '8px 20px',
-                margin: '0',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                boxSizing: 'border-box'
-              }}
+              className={styles.secondButton}
             >
-              <span style={{ fontSize: '12px', lineHeight: '18px', display: 'inline-block' }}>···</span>
+              <span className={styles.threeDots}>···</span>
             </Button>
           </Dropdown>
         ) : (
@@ -122,25 +81,7 @@ export const OperationButtons: React.FC<OperationButtonsProps> = ({
             size="small" 
             type={config.second.type || 'primary' as any}
             disabled={true}
-            style={{ 
-              flex: '1 1 0',
-              minWidth: 0,
-              maxWidth: 'calc(50% - 1px)',
-              textAlign: 'center',
-              display: 'inline-flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: '4px 6px',
-              fontSize: '12px',
-              lineHeight: '20px',
-              minHeight: '28px',
-              height: '28px',
-              margin: '0',
-              whiteSpace: 'nowrap',
-              overflow: 'visible',
-              textOverflow: 'ellipsis',
-              boxSizing: 'border-box'
-            }}
+            className={styles.secondButtonDisabled}
           >
             {config.second.text}
           </Button>

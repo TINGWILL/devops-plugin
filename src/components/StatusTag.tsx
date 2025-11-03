@@ -3,6 +3,7 @@ import { Tag, Popover, Button, Toast } from '@douyinfe/semi-ui';
 import { IconInfoCircle, IconCopy } from '@douyinfe/semi-icons';
 import { DeploymentStatus, STATUS_CONFIG } from '../constants/deploymentStatus';
 import * as dateFns from 'date-fns';
+import styles from './StatusTag.module.css';
 
 interface StatusTagProps {
   status: DeploymentStatus;
@@ -30,56 +31,21 @@ export const StatusTag: React.FC<StatusTagProps> = ({
   
   // 气泡卡片内容
   const errorContent = errorMessage ? (
-    <div style={{
-      width: '360px',
-      padding: '0',
-    }}>
-      <div style={{
-        padding: '16px',
-        backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px',
-          fontSize: '14px',
-          fontWeight: 600,
-          color: isDarkMode ? '#ffffff' : '#262626',
-        }}>
-          <IconInfoCircle style={{ color: '#ff4d4f', fontSize: '16px' }} />
-          <span>部署失败信息</span>
-        </div>
-        
-        <div style={{
-          backgroundColor: isDarkMode ? '#262626' : '#f5f5f5',
-          padding: '12px',
-          borderRadius: '4px',
-          marginBottom: '12px',
-          border: `1px solid ${isDarkMode ? '#434343' : '#e8e8e8'}`,
-        }}>
-          <div style={{
-            fontSize: '13px',
-            color: isDarkMode ? '#ffffff' : '#595959',
-            lineHeight: '20px',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            maxHeight: '200px',
-            overflowY: 'auto',
-          }}>
-            {errorMessage}
-          </div>
-        </div>
-        
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <Button
-            size="small"
-            icon={<IconCopy />}
-            onClick={async (e) => {
+    <div className={styles.errorPopover}>
+      <div className={styles.errorPopoverHeader}>
+        <IconInfoCircle className={styles.errorIcon} />
+        <span>部署失败信息</span>
+      </div>
+      
+      <div className={styles.errorPopoverContent}>
+        {errorMessage}
+      </div>
+      
+      <div className={styles.errorPopoverFooter}>
+        <Button
+          size="small"
+          icon={<IconCopy />}
+          onClick={async (e) => {
               e.stopPropagation();
               e.preventDefault();
               
@@ -190,26 +156,36 @@ export const StatusTag: React.FC<StatusTagProps> = ({
             复制错误信息
           </Button>
           {errorTime && (
-            <span style={{
-              fontSize: '12px',
-              color: isDarkMode ? '#8c8c8c' : '#8c8c8c',
-            }}>
+            <span className={styles.errorTime}>
               {dateFns.format(new Date(errorTime), 'yyyy-MM-dd HH:mm:ss')}
             </span>
           )}
-        </div>
       </div>
     </div>
   ) : null;
   
+  // 获取状态样式类名（将 PENDING_DEPLOYMENT -> pending, DEPLOYMENT_FAILED -> failed）
+  const getStatusClassName = (status: DeploymentStatus): string => {
+    const statusMap: Record<DeploymentStatus, string> = {
+      [DeploymentStatus.PENDING]: 'pending',
+      [DeploymentStatus.APPROVING]: 'approving',
+      [DeploymentStatus.DEPLOYING]: 'deploying',
+      [DeploymentStatus.DEPLOYED]: 'deployed',
+      [DeploymentStatus.DEPLOYMENT_FAILED]: 'failed',
+      [DeploymentStatus.ROLLING_BACK]: 'rollingBack',
+      [DeploymentStatus.ENDED]: 'ended',
+    };
+    return statusMap[status] || 'pending';
+  };
+  
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-    <Tag 
+    <div className={styles.statusTagContainer}>
+      <Tag 
         color={config.color as any} 
-      className={`semi-tag-${config.color} ${className || ''}`}
-    >
-      {status}
-    </Tag>
+        className={`${styles.statusTag} ${styles[getStatusClassName(status)] || ''} ${className || ''}`}
+      >
+        {status}
+      </Tag>
       {isFailed && errorMessage && (
         <Popover
           visible={visible}
@@ -218,9 +194,7 @@ export const StatusTag: React.FC<StatusTagProps> = ({
           trigger="click"
           position="bottomLeft"
           showArrow
-          style={{
-            padding: '0',
-          }}
+          className={styles.errorPopoverWrapper}
         >
           <span
             onClick={(e) => {
@@ -229,14 +203,7 @@ export const StatusTag: React.FC<StatusTagProps> = ({
             onMouseDown={(e) => {
               e.stopPropagation();
             }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              color: visible ? '#1890ff' : '#8c8c8c',
-              fontSize: '14px',
-              transition: 'color 0.2s',
-            }}
+            className={styles.errorInfoIcon}
             title="查看错误信息"
           >
             <IconInfoCircle size="small" />

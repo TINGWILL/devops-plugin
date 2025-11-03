@@ -1,0 +1,253 @@
+/* 表格容器 - 通过父级类名限定作用域 */
+.tableContainer {
+  background: var(--semi-color-bg-0);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  height: calc(100vh - 260px);
+  margin-bottom: 10px;/* 减小与评论区的间距 */
+  overflow: hidden;
+}
+
+.tableWrapper {
+  border: 1px solid var(--semi-color-border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 表格基础样式 - 通过父级限定 */
+.tableContainer :global(.semi-table) {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.tableContainer :global(.semi-table .semi-table-thead tr th),
+.tableContainer :global(.semi-table .semi-table-tbody tr td) {
+  box-sizing: border-box;
+}
+
+/* 表头样式 - 使用主题变量 */
+.tableContainer :global(.semi-table .semi-table-thead tr th) {
+  background-color: var(--semi-color-bg-0);
+  border-right: 1px solid var(--semi-color-border);
+  border-bottom: 1px solid var(--semi-color-border);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--semi-color-text-0);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tableContainer :global(.semi-table .semi-table-thead tr th .semi-table-column-title) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
+}
+
+/* 表体样式 - 使用主题变量 */
+.tableContainer :global(.semi-table .semi-table-tbody tr td) {
+  background-color: var(--semi-color-bg-0);
+  border-right: 1px solid var(--semi-color-border);
+  border-bottom: 1px solid var(--semi-color-border);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--semi-color-text-0);
+  vertical-align: middle;
+}
+
+/* 分组行样式 */
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-section td),
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-grouped-row td) {
+  background-color: var(--semi-color-fill-0);
+  border-right: 1px solid var(--semi-color-border);
+  border-bottom: 1px solid var(--semi-color-border);
+}
+
+/* 固定列样式 */
+.tableContainer :global(.semi-table-selection-column) {
+  position: sticky;
+  left: 0;
+  z-index: 11;
+  width: 50px;
+  background: var(--semi-color-bg-0);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 固定列表头单元格背景 */
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-selection-column),
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-fixed-left),
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-fixed-right) {
+  background-color: var(--semi-color-bg-0) !important;
+}
+
+/* 固定列表体单元格背景 */
+.tableContainer :global(.semi-table .semi-table-tbody .semi-table-selection-column),
+.tableContainer :global(.semi-table .semi-table-tbody .semi-table-fixed-left),
+.tableContainer :global(.semi-table .semi-table-tbody .semi-table-fixed-right) {
+  background-color: var(--semi-color-bg-0) !important;
+}
+
+/* 固定列分组行单元格背景 */
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-section .semi-table-selection-column),
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-section .semi-table-fixed-left),
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-section .semi-table-fixed-right),
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-grouped-row .semi-table-selection-column),
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-grouped-row .semi-table-fixed-left),
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-grouped-row .semi-table-fixed-right) {
+  background-color: var(--semi-color-fill-0) !important;
+}
+
+/* 固定列 hover 状态 */
+.tableContainer :global(.semi-table .semi-table-tbody tr:hover .semi-table-selection-column),
+.tableContainer :global(.semi-table .semi-table-tbody tr:hover .semi-table-fixed-left),
+.tableContainer :global(.semi-table .semi-table-tbody tr:hover .semi-table-fixed-right) {
+  background-color: var(--semi-color-fill-0) !important;
+}
+
+/* 固定列选中行状态 */
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-selected .semi-table-selection-column),
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-selected .semi-table-fixed-left),
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-selected .semi-table-fixed-right) {
+  background-color: var(--semi-color-fill-1) !important;
+}
+
+.tableContainer :global(.semi-table-fixed-left) {
+  position: sticky;
+  left: 50px;
+  z-index: 10;
+  background: var(--semi-color-bg-0);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.tableContainer :global(.semi-table-fixed-right) {
+  position: sticky;
+  right: 0;
+  z-index: 10;
+  background: var(--semi-color-bg-0);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+}
+
+/* 表头选择列 - 隐藏3个点下拉菜单 */
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-selection-column) {
+  padding: 10px 16px;
+  overflow: hidden;
+}
+
+/* 隐藏伪元素 */
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-selection-column::before),
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-selection-column::after),
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-selection-column *::before),
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-selection-column *::after) {
+  display: none;
+  content: none;
+}
+
+/* 隐藏下拉按钮 */
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-selection-column .semi-dropdown),
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-selection-column button:not(.semi-checkbox):not([type="checkbox"])),
+.tableContainer :global(.semi-table .semi-table-thead .semi-table-selection-column > *:not(.semi-checkbox):not(.semi-checkbox-wrapper):not(input[type="checkbox"])) {
+  display: none;
+}
+
+.tableContainer :global(.semi-table .semi-table-thead tr th:first-child) {
+  overflow: hidden;
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+}
+
+.tableContainer :global(.semi-table .semi-table-thead tr th:first-child .semi-table-selection-wrap) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* 暗色模式样式 - 通过父级限定 */
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-thead tr th) {
+  background-color: #2a2a2a;
+  color: #ffffff;
+  border-color: #4a4a4a;
+}
+
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr td) {
+  background-color: #2a2a2a;
+  color: #ffffff;
+  border-color: #4a4a4a;
+}
+
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr:hover td) {
+  background-color: #3a3a3a;
+}
+
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-selected td) {
+  background-color: #1a3a5a;
+}
+
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-section td),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-grouped-row td) {
+  background-color: #2a2a2a;
+  border-color: #4a4a4a;
+}
+
+/* 暗色模式固定列表头背景 */
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-thead .semi-table-selection-column),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-thead .semi-table-fixed-left),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-thead .semi-table-fixed-right) {
+  background-color: #2a2a2a !important;
+}
+
+/* 暗色模式固定列表体背景 */
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody .semi-table-selection-column),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody .semi-table-fixed-left),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody .semi-table-fixed-right) {
+  background-color: #2a2a2a !important;
+}
+
+/* 暗色模式固定列分组行背景 */
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-section .semi-table-selection-column),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-section .semi-table-fixed-left),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-section .semi-table-fixed-right),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-grouped-row .semi-table-selection-column),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-grouped-row .semi-table-fixed-left),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-grouped-row .semi-table-fixed-right) {
+  background-color: #2a2a2a !important;
+}
+
+/* 暗色模式固定列 hover 状态 */
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr:hover .semi-table-selection-column),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr:hover .semi-table-fixed-left),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr:hover .semi-table-fixed-right) {
+  background-color: #3a3a3a !important;
+}
+
+/* 暗色模式固定列选中行状态 */
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-selected .semi-table-selection-column),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-selected .semi-table-fixed-left),
+:global(body[theme-mode="dark"]) .tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-selected .semi-table-fixed-right) {
+  background-color: #1a3a5a !important;
+}
+
+/* 表格行 hover 效果 - 使用主题变量 */
+.tableContainer :global(.semi-table .semi-table-tbody tr:hover td) {
+  background-color: var(--semi-color-fill-0);
+}
+
+/* 选中行样式 */
+.tableContainer :global(.semi-table .semi-table-tbody tr.semi-table-row-selected td) {
+  background-color: var(--semi-color-fill-1);
+}
+

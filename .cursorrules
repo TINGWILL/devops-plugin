@@ -45,10 +45,13 @@
    - 图标从 `@douyinfe/semi-icons` 导入：`import { IconPlus, IconDelete } from '@douyinfe/semi-icons'`
 
 2. **样式处理**
+   - **必须使用 CSS Modules**：组件和页面级样式必须使用 `*.module.css` 文件
    - 优先使用 Semi Design 的内置样式系统（size、theme、style 等 props）
    - 暗色模式支持：使用 Semi 的 CSS 变量 `var(--semi-color-bg-0)`、`var(--semi-color-text-0)` 等
-   - 自定义样式使用内联 style 或 CSS 类（放在对应的 index.css 中）
+   - **禁止使用内联样式**：除非是动态值（如动态颜色、尺寸），否则必须使用 CSS Modules
+   - **禁止使用 `dangerouslySetInnerHTML` 注入样式**：所有样式必须在 CSS 文件中定义
    - 响应式设计考虑移动端适配
+   - 样式作用域分层：组件级 → 页面级 → 全局级（仅在 `index.css` 中存放跨页面复用的基础样式）
 
 3. **表格组件（Table）** - 参考 [Semi Design Table 官方文档](https://semi.design/zh-CN/show/table)
    
@@ -200,11 +203,178 @@ src/
 - **组件命名**: PascalCase (`BatchHeader`, `OperationButtons`)
 - **Hook 命名**: camelCase with `use` prefix (`useDeploymentStatus`, `useBatchOperations`)
 
+### CSS Modules 样式规范
+
+1. **样式作用域分层**
+   - **组件级样式**：每个组件有自己的 `ComponentName.module.css` 文件
+     ```typescript
+     // ✅ 正确
+     import styles from './ComponentName.module.css';
+     <div className={styles.container}>...</div>
+     ```
+   - **页面级样式**：每个页面有自己的 `PageName.module.css` 文件（如 `App.module.css`）
+   - **全局样式**：仅在 `src/features/web/index.css` 中存放跨页面复用的基础样式
+     - 浏览器重置（`html, body`）
+     - 全局滚动条样式
+     - 全局字体设置
+     - 全局下拉菜单、弹窗等复用样式
+
+2. **与 Semi Design 样式集成**
+   - **禁止全局覆盖 `semi-*` 类名**：禁止在全局 `index.css` 中直接覆盖 `.semi-table`、`.semi-modal` 等类名
+   - **通过父级类名限定作用域**：在 CSS Module 中使用 `:global()` 包装 Semi Design 类名
+     ```css
+     /* ✅ 正确：通过父级类名限定 */
+     .tableContainer :global(.semi-table .semi-table-thead tr th) {
+       background-color: var(--semi-color-bg-0);
+     }
+     
+     /* ❌ 错误：全局覆盖 */
+     .semi-table .semi-table-thead tr th {
+       background-color: #fff;
+     }
+     ```
+   - **使用 Semi Design 主题变量**：优先使用 `var(--semi-color-bg-0)`、`var(--semi-color-text-0)` 等变量，避免硬编码颜色值
+     ```css
+     /* ✅ 正确 */
+     background-color: var(--semi-color-bg-0);
+     color: var(--semi-color-text-0);
+     
+     /* ❌ 错误 */
+     background-color: #ffffff;
+     color: #262626;
+     ```
+
+3. **!important 使用规范**
+   - **禁止滥用 `!important`**：仅在必要时（如覆盖 Semi Design 的固定样式）使用
+   - **优先提高选择器特异性**：使用更具体的选择器而不是 `!important`
+   - **在 CSS Modules 中避免使用**：通过父级类名限定作用域后，通常不需要 `!important`
+
+4. **内联样式使用规范**
+   - **禁止内联样式**：除非是动态计算的值（如根据 props 动态计算的尺寸、颜色）
+   - **动态值例外**：以下情况可以使用内联样式：
+     ```typescript
+     // ✅ 允许：动态计算的颜色
+     <div style={{ backgroundColor: tagColor.bg }}>
+     
+     // ✅ 允许：动态计算的尺寸
+     <div style={{ width: `${width}px` }}>
+     
+     // ❌ 禁止：固定值应使用 CSS Modules
+     <div style={{ padding: '16px', backgroundColor: '#fff' }}>
+     ```
+   - **禁止使用 `dangerouslySetInnerHTML` 注入样式**：所有样式必须在 CSS 文件中定义
+
+5. **样式命名规范**
+   - CSS Module 类名使用 camelCase（如 `appContainer`、`tableHeader`）
+   - 类名应具有语义性，避免使用 `box1`、`div2` 等无意义命名
+   - 避免使用过于通用的类名（如 `container`、`header`），使用更具体的名称（如 `appContainer`、`appHeader`）
+
+6. **样式文件结构**
+   ```
+   src/
+   ├── components/
+   │   ├── ComponentName.tsx
+   │   └── ComponentName.module.css        # 组件样式
+   ├── features/
+   │   └── web/
+   │       ├── App.tsx
+   │       ├── App.module.css              # 页面样式
+   │       └── index.css                    # 全局基础样式
+   └── global.d.ts                          # CSS Modules 类型声明
+   ```
+
+### React 开发最佳实践
+
+1. **组件设计原则**
+   - **单一职责**：每个组件只负责一个功能，复杂逻辑抽取到自定义 Hooks
+   - **可复用性**：组件应该是可复用的，通过 props 配置行为
+   - **可测试性**：组件逻辑清晰，易于编写单元测试
+
+2. **性能优化**
+   - **使用 `useMemo` 缓存计算结果**：
+     ```typescript
+     // ✅ 正确：缓存引用型参数（Table columns、dataSource）
+     const columns = useMemo(() => [
+       { title: '名称', dataIndex: 'name' }
+     ], [dependencies]);
+     
+     // ❌ 错误：每次 render 都创建新数组
+     const columns = [
+       { title: '名称', dataIndex: 'name' }
+     ];
+     ```
+   - **使用 `useCallback` 缓存函数**：
+     ```typescript
+     // ✅ 正确：避免子组件不必要的重渲染
+     const handleClick = useCallback(() => {
+       // ...
+     }, [dependencies]);
+     ```
+   - **使用 `React.memo` 优化纯组件**：
+     ```typescript
+     export const StatusTag = React.memo<StatusTagProps>(({ status }) => {
+       // ...
+     });
+     ```
+   - **避免在 render 中创建对象和函数**：
+     ```typescript
+     // ❌ 错误：每次 render 都创建新对象
+     <Table dataSource={[...]} columns={[...]} />
+     
+     // ✅ 正确：使用 useMemo 缓存
+     const dataSource = useMemo(() => [...], [dependencies]);
+     const columns = useMemo(() => [...], [dependencies]);
+     <Table dataSource={dataSource} columns={columns} />
+     ```
+
+3. **Hooks 使用规范**
+   - **自定义 Hooks 命名**：以 `use` 开头（如 `useDeploymentStatus`、`useBatchOperations`）
+   - **Hooks 位置**：放在 `src/hooks/` 目录
+   - **Hooks 依赖**：正确设置依赖数组，避免遗漏导致闭包问题
+   - **避免在循环、条件语句中调用 Hooks**：Hooks 必须在组件的顶层调用
+
+4. **类型安全**
+   - **避免使用 `any`**：使用 `unknown` 或具体类型
+   - **使用 `import type` 导入纯类型**：
+     ```typescript
+     import type { DeploymentTask } from '../types/deployment';
+     ```
+   - **为函数参数和返回值添加类型注解**：
+     ```typescript
+     const handleOperation = (task: DeploymentTask): void => {
+       // ...
+     };
+     ```
+
+### Semi Design 使用最佳实践
+
+1. **组件导入**
+   - **按需导入**：只导入需要的组件，避免导入整个库
+     ```typescript
+     // ✅ 正确
+     import { Table, Button, Modal } from '@douyinfe/semi-ui';
+     import { IconPlus, IconDelete } from '@douyinfe/semi-icons';
+     
+     // ❌ 错误
+     import * as Semi from '@douyinfe/semi-ui';
+     ```
+
+2. **Table 组件性能优化**
+   - **必须提供 `key` 或 `rowKey`**：所有行相关操作（选择、展开、分组等）都依赖 `key`
+   - **使用 `useMemo` 缓存 `columns` 和 `dataSource`**：Table 使用浅层对比，引用型参数需要手动改变引用才能触发更新
+   - **避免在 render 中创建字面量**：会导致不必要的更新（清空选中行、展开行等）
+
+3. **主题和样式**
+   - **使用 Semi Design 主题变量**：`var(--semi-color-bg-0)`、`var(--semi-color-text-0)` 等
+   - **暗色模式支持**：检测 `body[theme-mode="dark"]` 并应用相应样式
+   - **响应式设计**：使用 Semi Design 的响应式工具类或 CSS 变量
+
 ### 其他规范
 1. **日期处理**: 使用 `date-fns` 处理日期格式化
 2. **本地存储**: 使用 `localStorage` 持久化数据，添加错误处理
 3. **响应式**: 考虑不同屏幕尺寸，使用 Semi Design 的响应式工具
 4. **无障碍性**: 合理使用语义化 HTML 和 ARIA 属性
+5. **错误处理**: API 调用使用 try-catch，使用 Semi Design 的 `Toast` 显示错误提示
 
 ## 飞书项目插件兼容性处理
 
@@ -225,20 +395,26 @@ src/
 
 ### CSS 样式隔离与冲突处理
 
-1. **样式作用域**
-   - 使用 CSS Modules 或命名空间隔离样式，避免污染飞书原生页面
-   - 插件容器使用唯一 ID（如 `#app`）或类名，所有样式限制在该容器内
-   - 避免全局样式：不使用 `* { }` 全局选择器，除非确有必要
+1. **样式作用域隔离（已通过 CSS Modules 实现）**
+   - **必须使用 CSS Modules**：所有组件和页面级样式使用 `*.module.css` 文件
+   - 插件容器使用唯一 ID（如 `#app`），CSS Modules 自动生成唯一类名，避免污染飞书原生页面
+   - 全局样式限制：仅在 `index.css` 中存放跨页面复用的基础样式，避免使用 `* { }` 全局选择器
 
-2. **样式优先级**
-   - 合理使用 `!important`：仅在必要时（如覆盖第三方库样式）使用
-   - 提高选择器特异性：使用更具体的选择器而不是 `!important`
-   - 样式覆盖顺序：插件样式应在 Semi Design 样式之后加载
+2. **Semi Design 样式覆盖（使用 CSS Modules）**
+   - **禁止在全局 `index.css` 中覆盖**：禁止直接覆盖 `.semi-table`、`.semi-modal` 等全局类名
+   - **通过父级类名限定作用域**：在 CSS Module 中使用 `:global()` 包装 Semi Design 类名
+     ```css
+     /* ✅ 正确：通过父级类名限定，避免全局污染 */
+     .tableContainer :global(.semi-table .semi-table-thead tr th) {
+       background-color: var(--semi-color-bg-0);
+     }
+     ```
+   - **使用 Semi Design 主题变量**：优先使用 CSS 变量，避免硬编码颜色值
 
-3. **Semi Design 样式覆盖**
-   - 使用 `dangerouslySetInnerHTML` 动态注入样式时，确保选择器足够具体
-   - 针对表格等复杂组件，使用多层级选择器确保样式生效
-   - 示例：`.semi-table-container .semi-table .semi-table-thead tr th`
+3. **样式优先级控制**
+   - **避免使用 `!important`**：通过父级类名限定作用域后，通常不需要 `!important`
+   - **提高选择器特异性**：使用更具体的选择器而不是 `!important`
+   - **样式加载顺序**：CSS Modules 在 Semi Design 样式之后加载，自动提高优先级
 
 ### DOM 操作与事件处理
 

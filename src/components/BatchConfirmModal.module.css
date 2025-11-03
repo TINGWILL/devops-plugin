@@ -1,0 +1,20 @@
+/* 批量确认弹窗内容 */
+.modalContent {
+  margin-bottom: 16px;
+}
+
+.modalText {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: var(--semi-color-text-1);
+}
+
+.modalInfoBox {
+  padding: 12px;
+  background-color: var(--semi-color-fill-0);
+  border: 1px solid var(--semi-color-border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--semi-color-text-1);
+}
+

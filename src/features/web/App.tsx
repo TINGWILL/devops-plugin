@@ -24,6 +24,9 @@ import { useGrouping } from '../../hooks/useGrouping';
 import { useDeployOrder } from '../../hooks/useDeployOrder';
 import { useBatchConfirm } from '../../hooks/useBatchConfirm';
 import { useModals } from '../../hooks/useModals';
+import './index.css';
+import styles from './App.module.css';
+import tableStyles from '../../components/DeploymentTable.module.css';
 
 // 使用 DeploymentTask 作为数据项类型
 type DataItem = DeploymentTask;
@@ -506,148 +509,16 @@ function App() {
         // 可以在这里上报错误到监控系统
       }}
     >
-        <div 
-            id="app"
-            style={{ 
-                padding: '0 24px 24px 24px',
-                backgroundColor: isDarkMode ? 'var(--semi-color-bg-0)' : '#ffffff',
-                color: isDarkMode ? 'var(--semi-color-text-0)' : '#262626',
-                minHeight: '100vh',
-                overflow: 'visible',
-                display: 'flex',
-                flexDirection: 'column',
-                boxSizing: 'border-box'
-            }}
-        >
-            {/* 字体样式覆盖 */}
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                    * {
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
-                    }
-                    .semi-table th {
-                        font-weight: 500 !important;
-                        color: ${isDarkMode ? 'var(--semi-color-text-0)' : '#262626'} !important;
-                        white-space: nowrap !important;
-                        overflow: hidden !important;
-                        text-overflow: ellipsis !important;
-                        background-color: #F5F7FA !important;
-                        border-right: 1px solid #E5E6EB !important;
-                        border-bottom: 1px solid #E5E6EB !important;
-                    }
-                    .semi-table th .semi-table-column-title {
-                        white-space: nowrap !important;
-                        overflow: hidden !important;
-                        text-overflow: ellipsis !important;
-                        display: block !important;
-                        max-width: 100% !important;
-                    }
-                    .semi-table td {
-                        font-weight: 400 !important;
-                        color: ${isDarkMode ? 'var(--semi-color-text-0)' : '#262626'} !important;
-                        background-color: ${isDarkMode ? '#2a2a2a' : '#FFFFFF'} !important;
-                        border-right: 1px solid ${isDarkMode ? '#4a4a4a' : '#E5E6EB'} !important;
-                        border-bottom: 1px solid ${isDarkMode ? '#4a4a4a' : '#E5E6EB'} !important;
-                    }
-                    
-                    /* 分组行样式 */
-                    .semi-table .semi-table-tbody tr.semi-table-row-section,
-                    .semi-table .semi-table-tbody tr.semi-table-grouped-row {
-                        background-color: ${isDarkMode ? '#2a2a2a' : '#F7F8FA'} !important;
-                    }
-                    
-                    .semi-table .semi-table-tbody tr.semi-table-row-section td,
-                    .semi-table .semi-table-tbody tr.semi-table-grouped-row td {
-                        background-color: ${isDarkMode ? '#2a2a2a' : '#F7F8FA'} !important;
-                        border-right: 1px solid ${isDarkMode ? '#4a4a4a' : '#E5E6EB'} !important;
-                        border-bottom: 1px solid ${isDarkMode ? '#4a4a4a' : '#E5E6EB'} !important;
-                    }
-                    .semi-dropdown-menu .semi-dropdown-item {
-                        font-size: 14px !important;
-                    }
-                    ${isDarkMode ? `
-                        /* 暗色模式主容器样式 */
-                        #app {
-                            background-color: #2f3037 !important;
-                        }
-                        /* 暗色模式表格样式 */
-                        .semi-table-container {
-                            background: #2a2a2a !important;
-                        }
-                        .semi-table-container .semi-table {
-                            background: #2a2a2a !important;
-                        }
-                        .semi-table-container .semi-table .semi-table-thead th {
-                            background-color: #2a2a2a !important;
-                            color: #ffffff !important;
-                            border-color: #4a4a4a !important;
-                        }
-                        .semi-table-container .semi-table .semi-table-tbody td {
-                            background-color: #2a2a2a !important;
-                            color: #ffffff !important;
-                            border-color: #4a4a4a !important;
-                        }
-                        .semi-table-container .semi-table .semi-table-tbody tr:hover td {
-                            background-color: #3a3a3a !important;
-                        }
-                        .semi-table-container .semi-table .semi-table-tbody tr.semi-table-row-selected td {
-                            background-color: #1a3a5a !important;
-                        }
-                        /* 暗色模式滚动条样式 */
-                        ::-webkit-scrollbar {
-                            width: 8px !important;
-                            height: 8px !important;
-                        }
-                        ::-webkit-scrollbar-track {
-                            background: #3a3a3a !important;
-                            border-radius: 4px !important;
-                        }
-                        ::-webkit-scrollbar-thumb {
-                            background: #666666 !important;
-                            border-radius: 4px !important;
-                        }
-                        ::-webkit-scrollbar-thumb:hover {
-                            background: #888888 !important;
-                        }
-                        /* 表格滚动条样式 */
-                        .semi-table-container::-webkit-scrollbar {
-                            width: 8px !important;
-                            height: 8px !important;
-                        }
-                        .semi-table-container::-webkit-scrollbar-track {
-                            background: #3a3a3a !important;
-                            border-radius: 4px !important;
-                        }
-                        .semi-table-container::-webkit-scrollbar-thumb {
-                            background: #666666 !important;
-                            border-radius: 4px !important;
-                        }
-                        .semi-table-container::-webkit-scrollbar-thumb:hover {
-                            background: #888888 !important;
-                        }
-                    ` : ''}
-                `
-            }} />
+        <div id="app" className={styles.appContainer}>
             {/* 标题和操作按钮 */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', marginBottom: '16px', flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{
-                        width: '4px',
-                        height: '20px',
-                        backgroundColor: '#3250eb',
-                        borderRadius: '2px',
-                        marginRight: '12px'
-                    }}></div>
-                    <h1 style={{ 
-                        fontSize: '18px', 
-                        fontWeight: 600, 
-                        color: isDarkMode ? 'var(--semi-color-text-0)' : '#262626', 
-                        margin: 0
-                    }}>
+            <div className={styles.appHeader}>
+                <div className={styles.appHeaderLeft}>
+                    <div className={styles.appHeaderTitleIndicator}></div>
+                    <h1 className={styles.appHeaderTitle}>
                         部署任务
                     </h1>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div className={styles.appHeaderActions}>
                     <BatchOperationPanel
                         selectedRowKeys={selectedRowKeys}
                         dataSource={dataSource}
@@ -670,13 +541,8 @@ function App() {
             <DeploymentHeader isDarkMode={isDarkMode} />
 
             {/* 表格 */}
-            <div className="semi-table-container">
-                <div style={{ 
-                    border: '1px solid #e8e8e8', 
-                    borderRadius: '6px',
-                    display: 'flex',
-                    flexDirection: 'column'
-                }}>
+            <div className={tableStyles.tableContainer}>
+                <div className={tableStyles.tableWrapper}>
                 <Table 
                     columns={columns} 
                     dataSource={groupedTableDataSource} 

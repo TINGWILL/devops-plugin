@@ -1,0 +1,21 @@
+/* 部署头部容器 */
+.deploymentHeader {
+  margin-bottom: 12px;
+  padding: 16px 20px;
+  background-color: var(--semi-color-fill-0);
+  border: 1px solid var(--semi-color-border);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--semi-color-text-0);
+}
+
+.deploymentHeaderContent {
+  color: var(--semi-color-text-1);
+  line-height: 1.6;
+}
+
+/* 暗色模式 */
+:global(body[theme-mode="dark"]) .deploymentHeader {
+  background-color: var(--semi-color-bg-1);
+}
+
